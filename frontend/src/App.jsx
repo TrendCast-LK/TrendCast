@@ -1,19 +1,71 @@
-import { Route, Routes } from 'react-router-dom'
-import { Layout } from './components/Layout'
-import { Explorer } from './pages/Explorer'
-import { ChannelDetail } from './pages/ChannelDetail'
-import { Forecast } from './pages/Forecast'
+import { Routes, Route, Navigate } from "react-router-dom";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
+import Dashboard from "./pages/Dashboard";
+import NewPrediction from "./pages/NewPrediction";
+import PredictionResult from "./pages/PredictionResult";
+import Trends from "./pages/Trends";
+import Settings from "./pages/Settings";
+import Channel from "./pages/Channel";
+import RequireAuth from "./components/RequireAuth";
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Explorer />} />
-        <Route path="/channels/:channelId" element={<ChannelDetail />} />
-        <Route path="/forecast" element={<Forecast />} />
-      </Route>
-    </Routes>
-  )
-}
+      <Route path="/" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
 
-export default App
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/new-prediction"
+        element={
+          <RequireAuth>
+            <NewPrediction />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/prediction-result/:id"
+        element={
+          <RequireAuth>
+            <PredictionResult />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/trends"
+        element={
+          <RequireAuth>
+            <Trends />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <RequireAuth>
+            <Settings />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/channel"
+        element={
+          <RequireAuth>
+            <Channel />
+          </RequireAuth>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
