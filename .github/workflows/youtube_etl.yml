@@ -17,6 +17,7 @@ on:
           - both
           - job1_channel_ingestion
           - job2_timeseries_collector
+          - embed_new_videos
 
 env:
   SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -73,3 +74,35 @@ jobs:
 
       - name: Run Timeseries Collector
         run: python youtube-etl-pipeline/youtube_extractor/job2_timeseries_collector.py
+
+  # =========================================================================
+  # Job 3 — Embed New Videos (runs after Job 1, twice daily)
+  # =========================================================================
+  embed_new_videos:
+    name: "Job 3 — Embed New Videos"
+    runs-on: ubuntu-latest
+    needs: channel_ingestion
+    if: >-
+      always()
+      && (needs.channel_ingestion.result == 'success' || needs.channel_ingestion.result == 'skipped')
+      && (
+        (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'both' || github.event.inputs.job == 'embed_new_videos'))
+        || (github.event_name == 'schedule' && github.event.schedule == '17 */12 * * *')
+      )
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Heavier ML dependencies (torch, sentence-transformers, transformers) —
+      # kept separate from Job 1's lightweight install so Job 1 stays fast.
+      - name: Install dependencies
+        run: pip install psycopg2-binary requests Pillow numpy torch sentence-transformers transformers
+
+      - name: Run Embed New Videos
+        run: python youtube-etl-pipeline/youtube_extractor/embed_new_videos.py
