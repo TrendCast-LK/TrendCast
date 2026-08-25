@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from db import get_cursor
 from inference import ThumbnailDownloadError, get_state, load_artifacts, run_forecast
@@ -13,6 +14,8 @@ from models import (
     Video,
     ViewTimeseries,
 )
+from routers import auth, channel, dashboard, notifications, predictions, trends
+from storage import UPLOADS_DIR, ensure_uploads_dir
 
 
 @asynccontextmanager
@@ -20,6 +23,8 @@ async def lifespan(app: FastAPI):
     load_artifacts()
     yield
 
+
+ensure_uploads_dir()  # StaticFiles below requires the directory to exist at mount time
 
 app = FastAPI(title="Trendcast API", lifespan=lifespan)
 
@@ -33,6 +38,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+app.include_router(auth.router)
+app.include_router(channel.router)
+app.include_router(notifications.router)
+app.include_router(dashboard.router)
+app.include_router(trends.router)
+app.include_router(predictions.router)
 
 TIMESERIES_BY_VIDEO_SQL = """
     SELECT
