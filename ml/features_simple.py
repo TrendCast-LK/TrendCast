@@ -11,19 +11,21 @@ Usage:
 
 from __future__ import annotations
 
-import ast
-import re
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
+from services.tabular_features import (
+    compute_upload_timing,
+    count_tags,
+    parse_iso8601_duration,
+    title_char_length,
+    title_word_count,
+)
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 VIDEOS_IN = DATA_DIR / "videos.csv"
 CURVE_PARAMS_IN = DATA_DIR / "curve_params.csv"
 FEATURES_OUT = DATA_DIR / "features_simple.csv"
-
-SRI_LANKA_OFFSET = pd.Timedelta(hours=5, minutes=30)
 
 CHANNEL_COLUMNS = [
     "subscriber_count",
@@ -35,44 +37,6 @@ CHANNEL_COLUMNS = [
     "size_tier",
     "tier_category",
 ]
-
-DURATION_RE = re.compile(
-    r"^PT(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?$"
-)
-
-
-def parse_iso8601_duration(value) -> float:
-    """Parse an ISO 8601 duration (e.g. 'PT4M13S') into total seconds.
-
-    Returns NaN for missing/malformed values, including a bare 'PT' with no
-    components, which carries no actual duration information.
-    """
-    if pd.isna(value):
-        return np.nan
-    match = DURATION_RE.match(str(value).strip())
-    if not match or not any(match.groups()):
-        return np.nan
-    hours, minutes, seconds = match.groups()
-    total = (
-        int(hours or 0) * 3600
-        + int(minutes or 0) * 60
-        + float(seconds or 0)
-    )
-    return total
-
-
-def count_tags(value) -> int:
-    """Number of tags. 0 for null/empty; tags are stored as a stringified
-    Python list (e.g. "['a', 'b']") in the CSV."""
-    if pd.isna(value):
-        return 0
-    try:
-        tags = ast.literal_eval(value)
-    except (ValueError, SyntaxError):
-        return 0
-    if not tags:
-        return 0
-    return len(tags)
 
 
 def main() -> None:
@@ -87,8 +51,8 @@ def main() -> None:
 
     # --- Title -----------------------------------------------------------
     title = df["title"].fillna("")
-    df["title_char_length"] = title.str.len()
-    df["title_word_count"] = title.str.split().str.len()
+    df["title_char_length"] = title.apply(title_char_length)
+    df["title_word_count"] = title.apply(title_word_count)
 
     # --- Video metadata ----------------------------------------------------
     df["duration_seconds"] = df["duration"].apply(parse_iso8601_duration)
@@ -99,12 +63,15 @@ def main() -> None:
     df["tag_count"] = df["tags"].apply(count_tags)
     # category_id kept as-is, to be encoded in a later stage
 
-    # --- Upload timing (Sri Lanka time, UTC+5:30) ---------------------------
+    # --- Upload timing (Sri Lanka time, UTC+5:30) - same conversion used at
+    # inference time, see services/tabular_features.py:compute_upload_timing --
     published_at_utc = pd.to_datetime(df["published_at"], utc=True)
-    published_at_slt = published_at_utc + SRI_LANKA_OFFSET
-    df["upload_hour"] = published_at_slt.dt.hour
-    df["upload_dayofweek"] = published_at_slt.dt.dayofweek
-    df["is_weekend"] = df["upload_dayofweek"].isin([5, 6])
+    timing = pd.DataFrame(
+        published_at_utc.apply(compute_upload_timing).tolist(),
+        columns=["upload_hour", "upload_dayofweek", "is_weekend"],
+        index=df.index,
+    )
+    df[["upload_hour", "upload_dayofweek", "is_weekend"]] = timing
 
     # --- Assemble output -----------------------------------------------------
     output_columns = (

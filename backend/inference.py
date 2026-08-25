@@ -3,7 +3,8 @@
 Loads the trained ml/ pipeline's artifacts once (see load_artifacts(), called
 from main.py's startup hook) and reproduces its feature-construction path,
 column for column, for a single (title, thumbnail, upload time, optional
-channel) request. Mirrors the transformations in:
+channel) request, by calling the same shared functions the training
+pipeline uses (ml/services/) - see:
 
   ml/features_simple.py   - simple numeric features, upload-time conversion
   ml/embed_titles.py      - title embedding model (LaBSE)
@@ -11,10 +12,9 @@ channel) request. Mirrors the transformations in:
   ml/build_features.py    - PCA reduction, one-hot encoding, target scaling
   ml/train_model.py       - feature-name sanitization, target reconstruction
 
-Any drift between this file and those scripts silently produces wrong
-predictions rather than an error, so keep them in sync by hand - ml/ is not
-imported directly (it's a standalone script collection, not a package, and
-isn't guaranteed to ship alongside the backend at deploy time).
+Model *loading* and request-scoped state (InferenceState, the DB-backed
+channel-stats lookup) stay here; the pure feature-transformation logic lives
+in ml/services/ so training and serving can never drift apart.
 """
 
 from __future__ import annotations
@@ -24,9 +24,10 @@ import json
 import logging
 import math
 import statistics
+import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 
 import joblib
@@ -40,6 +41,20 @@ from transformers import CLIPModel, CLIPProcessor
 
 from db import get_cursor
 
+# ml/ is a sibling of backend/, not installed as a package - add the repo
+# root to sys.path so `from ml.services import ...` below resolves regardless
+# of how uvicorn was launched (this is the only file in backend/ that needs
+# ml/, so the path bootstrap lives here rather than in every entry point).
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from ml.services import feature_row as feature_row_service  # noqa: E402
+from ml.services import pca as pca_service  # noqa: E402
+from ml.services import tabular_features  # noqa: E402
+from ml.services import thumbnail_embedding  # noqa: E402
+from ml.services import title_embedding  # noqa: E402
+
 MODELS_DIR = Path(__file__).resolve().parent / "models"
 VINF_MODEL_PATH = MODELS_DIR / "vinf_model.joblib"
 TAU_MODEL_PATH = MODELS_DIR / "tau_model.joblib"
@@ -48,16 +63,7 @@ THUMBNAIL_PCA_PATH = MODELS_DIR / "thumbnail_pca.joblib"
 ENCODER_PATH = MODELS_DIR / "categorical_encoder.joblib"
 CHANNEL_MEDIANS_PATH = MODELS_DIR / "channel_medians.json"
 
-TITLE_MODEL_NAME = "sentence-transformers/LaBSE"  # ~1.8GB, downloads on first run
-THUMBNAIL_MODEL_NAME = "openai/clip-vit-base-patch32"  # downloads on first run
-
 THUMBNAIL_DOWNLOAD_TIMEOUT_SECONDS = 10.0
-
-SRI_LANKA_OFFSET = timedelta(hours=5, minutes=30)
-
-# Same column list/order as ml/features_simple.py's SIMPLE_FEATURE_COLUMNS
-# plus the title/word-count columns it computes inline.
-CATEGORICAL_COLUMNS = ["category_id", "size_tier"]
 
 # category_id is never known at inference time (an unpublished video has no
 # YouTube category yet, and ForecastRequest doesn't collect one) - -1 is
@@ -157,12 +163,11 @@ def load_artifacts() -> None:
             raise ValueError("vinf_model and tau_model were trained on different feature sets")
         state.feature_names = vinf_feature_names
 
-        print(f"[inference] loading {TITLE_MODEL_NAME} (~1.8GB, cached after first download)...")
-        state.title_model = SentenceTransformer(TITLE_MODEL_NAME, device=state.device)
+        print(f"[inference] loading {title_embedding.MODEL_NAME} (~1.8GB, cached after first download)...")
+        state.title_model = title_embedding.load_model(state.device)
 
-        print(f"[inference] loading {THUMBNAIL_MODEL_NAME} (downloads on first run, cached after)...")
-        state.thumbnail_model = CLIPModel.from_pretrained(THUMBNAIL_MODEL_NAME).to(state.device).eval()
-        state.thumbnail_processor = CLIPProcessor.from_pretrained(THUMBNAIL_MODEL_NAME)
+        print(f"[inference] loading {thumbnail_embedding.MODEL_NAME} (downloads on first run, cached after)...")
+        state.thumbnail_model, state.thumbnail_processor = thumbnail_embedding.load_model(state.device)
 
         state.ready = True
     except Exception as exc:  # noqa: BLE001 - any failure here must become a 503, not a crash
@@ -176,14 +181,6 @@ def load_artifacts() -> None:
         f"in {state.load_time_seconds:.1f}s"
     )
     _state = state
-
-
-def sanitize_feature_name(name: str) -> str:
-    """Must match ml/train_model.py's sanitize_feature_name exactly - the
-    saved models' booster feature names were sanitized this way at training
-    time (XGBoost rejects '<', '[', ']', which the 'Micro (<1K)' size_tier
-    category hits)."""
-    return name.replace("<", "lt").replace(">", "gt").replace("[", "(").replace("]", ")")
 
 
 def download_thumbnail(url: str) -> Image.Image:
@@ -204,33 +201,13 @@ def download_thumbnail(url: str) -> Image.Image:
 
 
 def embed_title(state: InferenceState, title: str) -> np.ndarray:
-    raw = state.title_model.encode([title], convert_to_numpy=True)
-    return state.title_pca.transform(raw)[0]
+    raw = title_embedding.embed_titles(state.title_model, [title])
+    return pca_service.apply_pca(state.title_pca, raw)[0]
 
 
 def embed_thumbnail(state: InferenceState, image: Image.Image) -> np.ndarray:
-    inputs = state.thumbnail_processor(images=[image], return_tensors="pt").to(state.device)
-    with torch.no_grad():
-        features = state.thumbnail_model.get_image_features(**inputs)
-    # Same defensive unwrap as ml/embed_thumbnails.py: newer transformers
-    # versions can return a BaseModelOutputWithPooling instead of a bare tensor.
-    image_embeds = getattr(features, "pooler_output", features)
-    raw = image_embeds.cpu().numpy().astype(np.float32)
-    return state.thumbnail_pca.transform(raw)[0]
-
-
-def compute_upload_timing(scheduled_upload_time: datetime) -> tuple[int, int, bool]:
-    """Same Sri Lanka time (UTC+5:30) conversion as ml/features_simple.py.
-    Naive datetimes are assumed UTC, matching how published_at is stored."""
-    if scheduled_upload_time.tzinfo is None:
-        scheduled_utc = scheduled_upload_time.replace(tzinfo=timezone.utc)
-    else:
-        scheduled_utc = scheduled_upload_time.astimezone(timezone.utc)
-    scheduled_slt = scheduled_utc + SRI_LANKA_OFFSET
-    upload_hour = scheduled_slt.hour
-    upload_dayofweek = scheduled_slt.weekday()  # Monday=0..Sunday=6, matches pandas .dt.dayofweek
-    is_weekend = upload_dayofweek in (5, 6)
-    return upload_hour, upload_dayofweek, is_weekend
+    raw = thumbnail_embedding.embed_images(state.thumbnail_model, state.thumbnail_processor, [image], state.device)
+    return pca_service.apply_pca(state.thumbnail_pca, raw)[0]
 
 
 def _size_tier_bucket(subscriber_count: float) -> str:
@@ -299,53 +276,6 @@ def get_channel_median_vinf(state: InferenceState, channel_id: str | None) -> fl
     return state.global_median_vinf
 
 
-def build_feature_row(
-    state: InferenceState,
-    title: str,
-    duration_seconds: float,
-    tag_count: int,
-    upload_hour: int,
-    upload_dayofweek: int,
-    is_weekend: bool,
-    channel_stats: dict,
-    title_pcs: np.ndarray,
-    thumb_pcs: np.ndarray,
-) -> pd.DataFrame:
-    """Assembles one feature row, named and ordered to exactly match the
-    trained booster's feature_names (see load_artifacts)."""
-    raw: dict[str, float | str | bool] = {
-        "title_char_length": len(title),
-        "title_word_count": len(title.split()),
-        "duration_seconds": duration_seconds,
-        "tag_count": tag_count,
-        "upload_hour": upload_hour,
-        "upload_dayofweek": upload_dayofweek,
-        "is_weekend": is_weekend,
-        "subscriber_count": channel_stats["subscriber_count"],
-        "total_views": channel_stats["total_views"],
-        "video_count": channel_stats["video_count"],
-        "avg_views_per_video": channel_stats["avg_views_per_video"],
-        "views_per_subscriber": channel_stats["views_per_subscriber"],
-        "engagement_ratio": channel_stats["engagement_ratio"],
-        "tier_category": channel_stats["tier_category"],
-    }
-
-    encoded = state.encoder.transform(
-        pd.DataFrame({"category_id": [UNKNOWN_CATEGORY_ID], "size_tier": [channel_stats["size_tier"]]})
-    )[0]
-    for name, value in zip(state.encoder.get_feature_names_out(CATEGORICAL_COLUMNS), encoded):
-        raw[name] = value
-
-    for i, value in enumerate(title_pcs):
-        raw[f"title_pc_{i}"] = float(value)
-    for i, value in enumerate(thumb_pcs):
-        raw[f"thumb_pc_{i}"] = float(value)
-
-    sanitized = {sanitize_feature_name(k): v for k, v in raw.items()}
-    row = [sanitized.get(name, 0.0) for name in state.feature_names]
-    return pd.DataFrame([row], columns=state.feature_names).astype(float)
-
-
 def run_forecast(
     state: InferenceState,
     title: str,
@@ -369,7 +299,7 @@ def run_forecast_on_image(
     download_thumbnail for callers that already have the image bytes."""
     title_pcs = embed_title(state, title)
     thumb_pcs = embed_thumbnail(state, image)
-    upload_hour, upload_dayofweek, is_weekend = compute_upload_timing(scheduled_upload_time)
+    upload_hour, upload_dayofweek, is_weekend = tabular_features.compute_upload_timing(scheduled_upload_time)
     channel_stats, used_channel_context = get_channel_stats(channel_id)
 
     # duration_seconds and tag_count are unknowable before upload. Reuse the
@@ -378,17 +308,30 @@ def run_forecast_on_image(
     # for missing/malformed durations), 0 for tag count (count_tags' fallback
     # for null/empty tags) - so the model sees the same "unknown" encoding it
     # saw at training time rather than a fabricated value.
-    X = build_feature_row(
-        state,
-        title=title,
-        duration_seconds=float("nan"),
-        tag_count=0,
-        upload_hour=upload_hour,
-        upload_dayofweek=upload_dayofweek,
-        is_weekend=is_weekend,
-        channel_stats=channel_stats,
+    simple_values = {
+        "title_char_length": tabular_features.title_char_length(title),
+        "title_word_count": tabular_features.title_word_count(title),
+        "duration_seconds": float("nan"),
+        "tag_count": 0,
+        "upload_hour": upload_hour,
+        "upload_dayofweek": upload_dayofweek,
+        "is_weekend": is_weekend,
+        "subscriber_count": channel_stats["subscriber_count"],
+        "total_views": channel_stats["total_views"],
+        "video_count": channel_stats["video_count"],
+        "avg_views_per_video": channel_stats["avg_views_per_video"],
+        "views_per_subscriber": channel_stats["views_per_subscriber"],
+        "engagement_ratio": channel_stats["engagement_ratio"],
+        "tier_category": channel_stats["tier_category"],
+    }
+    X = feature_row_service.assemble_feature_row(
+        simple_values,
+        encoder=state.encoder,
+        category_id=UNKNOWN_CATEGORY_ID,
+        size_tier=channel_stats["size_tier"],
         title_pcs=title_pcs,
         thumb_pcs=thumb_pcs,
+        feature_names=state.feature_names,
     )
 
     pred_log_vinf_rel = float(state.vinf_model.predict(X)[0])

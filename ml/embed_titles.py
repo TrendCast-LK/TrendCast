@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from sentence_transformers import SentenceTransformer
+from services.title_embedding import MODEL_NAME, embed_titles, load_model
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FEATURES_CSV = DATA_DIR / "features_simple.csv"
@@ -35,7 +35,6 @@ VIDEOS_CSV = DATA_DIR / "videos.csv"
 EMBEDDINGS_NPY = DATA_DIR / "title_embeddings.npy"
 EMBEDDING_IDS_CSV = DATA_DIR / "title_embedding_ids.csv"
 
-MODEL_NAME = "sentence-transformers/LaBSE"
 BATCH_SIZE = 64
 
 
@@ -77,7 +76,7 @@ def main() -> None:
     already_present = len(titles_df) - len(to_encode)
 
     print(f"[embed_titles] loading {MODEL_NAME} (~1.8GB, cached after first download)...")
-    model = SentenceTransformer(MODEL_NAME, device=device)
+    model = load_model(device)
     embedding_dim = (
         model.get_embedding_dimension()
         if hasattr(model, "get_embedding_dimension")
@@ -91,15 +90,7 @@ def main() -> None:
         print(f"[embed_titles] {n_empty} titles are null/empty; recording zero vectors for them")
 
     non_empty_titles = titles_raw[~is_empty].tolist()
-    if non_empty_titles:
-        encoded = model.encode(
-            non_empty_titles,
-            batch_size=BATCH_SIZE,
-            show_progress_bar=True,
-            convert_to_numpy=True,
-        )
-    else:
-        encoded = np.empty((0, embedding_dim), dtype=np.float32)
+    encoded = embed_titles(model, non_empty_titles, batch_size=BATCH_SIZE, show_progress_bar=True)
 
     new_embeddings = np.zeros((len(to_encode), embedding_dim), dtype=np.float32)
     new_embeddings[~is_empty.to_numpy()] = encoded

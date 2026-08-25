@@ -35,6 +35,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from services.feature_row import CATEGORICAL_COLUMNS, SIMPLE_FEATURE_COLUMNS
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import OneHotEncoder
 
@@ -55,7 +56,6 @@ ENCODER_OUT = MODELS_DIR / "categorical_encoder.joblib"
 CHANNEL_MEDIANS_OUT = MODELS_DIR / "channel_medians.json"
 
 N_PCA_COMPONENTS = 40
-CATEGORICAL_COLUMNS = ["category_id", "size_tier"]
 
 # --- Outlier filter -----------------------------------------------------------
 # tau near/at the curve_fit optimizer's upper bound (see ml/fit_curves.py)
@@ -65,23 +65,6 @@ TAU_MAX_HOURS = 10_000.0
 # Below this R^2, the fitted curve doesn't actually describe the video's
 # observed growth, so V_inf/tau from it aren't trustworthy either.
 R2_MIN = 0.5
-
-SIMPLE_FEATURE_COLUMNS = [
-    "title_char_length",
-    "title_word_count",
-    "duration_seconds",
-    "tag_count",
-    "upload_hour",
-    "upload_dayofweek",
-    "is_weekend",
-    "subscriber_count",
-    "total_views",
-    "video_count",
-    "avg_views_per_video",
-    "views_per_subscriber",
-    "engagement_ratio",
-    "tier_category",
-]
 
 
 def load_embedding_table(embeddings_path: Path, ids_path: Path, prefix: str) -> pd.DataFrame:

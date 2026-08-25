@@ -28,8 +28,8 @@ import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
+from services.thumbnail_embedding import MODEL_NAME, embed_images, load_model
 from tqdm import tqdm
-from transformers import CLIPModel, CLIPProcessor
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FEATURES_CSV = DATA_DIR / "features_simple.csv"
@@ -37,8 +37,6 @@ FAILURES_CSV = DATA_DIR / "thumbnail_failures.csv"
 THUMBNAILS_DIR = DATA_DIR / "thumbnails"
 EMBEDDINGS_NPY = DATA_DIR / "thumbnail_embeddings.npy"
 EMBEDDING_IDS_CSV = DATA_DIR / "thumbnail_embedding_ids.csv"
-
-MODEL_NAME = "openai/clip-vit-base-patch32"
 
 
 def load_target_ids(limit: int | None) -> list[str]:
@@ -98,8 +96,7 @@ def main() -> None:
     already_present = len(target_ids) - len(to_embed_ids)
 
     print(f"[embed_thumbnails] loading {MODEL_NAME} (downloads on first run, cached after)...")
-    model = CLIPModel.from_pretrained(MODEL_NAME).to(device).eval()
-    processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+    model, processor = load_model(device)
     embedding_dim = model.config.projection_dim
 
     n_failed = 0
@@ -122,13 +119,7 @@ def main() -> None:
 
         batch_embeddings = np.zeros((len(batch_ids), embedding_dim), dtype=np.float32)
         if images:
-            inputs = processor(images=images, return_tensors="pt").to(device)
-            with torch.no_grad():
-                features = model.get_image_features(**inputs)
-            # Newer transformers versions return a BaseModelOutputWithPooling
-            # (embeddings in .pooler_output) instead of a bare tensor.
-            image_embeds = getattr(features, "pooler_output", features)
-            batch_embeddings[valid_indices] = image_embeds.cpu().numpy().astype(np.float32)
+            batch_embeddings[valid_indices] = embed_images(model, processor, images, device)
 
         new_embeddings_rows.append(batch_embeddings)
 

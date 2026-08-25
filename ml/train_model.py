@@ -25,6 +25,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from services.feature_row import sanitize_feature_name
 from xgboost import XGBRegressor
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -51,14 +52,6 @@ DAY_CHECKPOINTS = {"day1": 24.0, "day3": 72.0, "day7": 168.0}
 MAPE_EPS = 1.0
 
 TOP_N_IMPORTANCE = 20
-
-
-def sanitize_feature_name(name: str) -> str:
-    """XGBoost rejects feature names containing '[', ']', or '<' (used by its
-    own split-condition serialization) - one-hot column names like
-    'size_tier_Micro (<1K)' hit this, so swap the offending characters for
-    plain text rather than touching features.csv itself."""
-    return name.replace("<", "lt").replace(">", "gt").replace("[", "(").replace("]", ")")
 
 
 def split_channels(df: pd.DataFrame, test_fraction: float) -> tuple[list[str], list[str]]:
