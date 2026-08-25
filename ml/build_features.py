@@ -14,21 +14,24 @@ Reads:
   ml/data/features_simple.csv
   ml/data/curve_params.csv           (for r2, to screen out bad fits)
   ml/data/title_embeddings.npy       + ml/data/title_embedding_ids.csv
-  ml/data/thumbnail_embeddings.npy   + ml/data/thumbnail_embedding_ids.csv
+  ml/data/thumbnail_embeddings{,_dinov3}.npy + matching _ids.csv
+                                      (selected via --thumbnail-encoder)
 
 Writes:
-  ml/data/features.csv               final training table
-  ml/models/title_pca.joblib         fitted PCA (768 -> 40), for the backend
-  ml/models/thumbnail_pca.joblib     fitted PCA (512 -> 40), for the backend
-  ml/models/categorical_encoder.joblib   fitted OneHotEncoder (category_id, size_tier)
-  ml/models/channel_medians.json     channel_id -> median fitted V_inf in this dataset
+  ml/data/features_{clip,dinov3}.csv       final training table
+  ml/models/title_pca.joblib               fitted PCA (768 -> 40), for the backend
+  ml/models/thumbnail_pca_{clip,dinov3}.joblib   fitted PCA (D -> 40)
+  ml/models/categorical_encoder.joblib     fitted OneHotEncoder (category_id, size_tier)
+  ml/models/channel_medians_{clip,dinov3}.json   channel_id -> median fitted V_inf
 
 Usage:
     python ml/build_features.py
+    python ml/build_features.py --thumbnail-encoder dinov3
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -45,14 +48,29 @@ FEATURES_SIMPLE_CSV = DATA_DIR / "features_simple.csv"
 CURVE_PARAMS_CSV = DATA_DIR / "curve_params.csv"
 TITLE_EMBEDDINGS_NPY = DATA_DIR / "title_embeddings.npy"
 TITLE_EMBEDDING_IDS_CSV = DATA_DIR / "title_embedding_ids.csv"
-THUMBNAIL_EMBEDDINGS_NPY = DATA_DIR / "thumbnail_embeddings.npy"
-THUMBNAIL_EMBEDDING_IDS_CSV = DATA_DIR / "thumbnail_embedding_ids.csv"
-FEATURES_OUT = DATA_DIR / "features.csv"
 
 TITLE_PCA_OUT = MODELS_DIR / "title_pca.joblib"
-THUMBNAIL_PCA_OUT = MODELS_DIR / "thumbnail_pca.joblib"
 ENCODER_OUT = MODELS_DIR / "categorical_encoder.joblib"
-CHANNEL_MEDIANS_OUT = MODELS_DIR / "channel_medians.json"
+
+# Thumbnail encoder selection - which embedding files feed the thumbnail PCA,
+# and which encoder-specific artifact names it writes, so a clip run and a
+# dinov3 run never clobber each other's output and can be compared directly.
+THUMBNAIL_ENCODER_CONFIGS = {
+    "clip": {
+        "embeddings_npy": DATA_DIR / "thumbnail_embeddings.npy",
+        "embedding_ids_csv": DATA_DIR / "thumbnail_embedding_ids.csv",
+        "pca_out": MODELS_DIR / "thumbnail_pca_clip.joblib",
+        "features_out": DATA_DIR / "features_clip.csv",
+        "channel_medians_out": MODELS_DIR / "channel_medians_clip.json",
+    },
+    "dinov3": {
+        "embeddings_npy": DATA_DIR / "thumbnail_embeddings_dinov3.npy",
+        "embedding_ids_csv": DATA_DIR / "thumbnail_embedding_ids_dinov3.csv",
+        "pca_out": MODELS_DIR / "thumbnail_pca_dinov3.joblib",
+        "features_out": DATA_DIR / "features_dinov3.csv",
+        "channel_medians_out": MODELS_DIR / "channel_medians_dinov3.json",
+    },
+}
 
 N_PCA_COMPONENTS = 40
 CATEGORICAL_COLUMNS = ["category_id", "size_tier"]
@@ -102,12 +120,25 @@ def fit_pca(raw_embeddings: np.ndarray, prefix: str) -> tuple[PCA, pd.DataFrame]
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--thumbnail-encoder",
+        choices=sorted(THUMBNAIL_ENCODER_CONFIGS),
+        default="clip",
+        help="Which thumbnail embedding set to build features from (default: clip)",
+    )
+    args = parser.parse_args()
+    encoder_config = THUMBNAIL_ENCODER_CONFIGS[args.thumbnail_encoder]
+    print(f"[build_features] thumbnail encoder: {args.thumbnail_encoder}")
+
     features_df = pd.read_csv(FEATURES_SIMPLE_CSV)
     n_before_join = len(features_df)
 
     curve_params_df = pd.read_csv(CURVE_PARAMS_CSV, usecols=["video_id", "r2"])
     title_df = load_embedding_table(TITLE_EMBEDDINGS_NPY, TITLE_EMBEDDING_IDS_CSV, "title_raw")
-    thumb_df = load_embedding_table(THUMBNAIL_EMBEDDINGS_NPY, THUMBNAIL_EMBEDDING_IDS_CSV, "thumb_raw")
+    thumb_df = load_embedding_table(
+        encoder_config["embeddings_npy"], encoder_config["embedding_ids_csv"], "thumb_raw"
+    )
 
     joined = (
         features_df.set_index("video_id")
@@ -174,11 +205,15 @@ def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-    output_df.to_csv(FEATURES_OUT, index=False)
+    features_out = encoder_config["features_out"]
+    thumbnail_pca_out = encoder_config["pca_out"]
+    channel_medians_out = encoder_config["channel_medians_out"]
+
+    output_df.to_csv(features_out, index=False)
     joblib.dump(title_pca, TITLE_PCA_OUT)
-    joblib.dump(thumb_pca, THUMBNAIL_PCA_OUT)
+    joblib.dump(thumb_pca, thumbnail_pca_out)
     joblib.dump(encoder, ENCODER_OUT)
-    with CHANNEL_MEDIANS_OUT.open("w") as f:
+    with channel_medians_out.open("w") as f:
         json.dump(channel_medians.to_dict(), f, indent=2)
 
     print_summary(
@@ -189,6 +224,10 @@ def main() -> None:
         vinf_rel_dist,
         title_pca,
         thumb_pca,
+        args.thumbnail_encoder,
+        features_out,
+        thumbnail_pca_out,
+        channel_medians_out,
     )
 
 
@@ -200,11 +239,16 @@ def print_summary(
     vinf_rel_dist: pd.Series,
     title_pca: PCA,
     thumb_pca: PCA,
+    thumbnail_encoder: str,
+    features_out: Path,
+    thumbnail_pca_out: Path,
+    channel_medians_out: Path,
 ) -> None:
     line = "=" * 78
     print(line)
     print("BUILD_FEATURES SUMMARY")
     print(line)
+    print(f"Thumbnail encoder:         {thumbnail_encoder}")
     print(f"Rows before join:          {n_before_join}")
     print(f"Rows dropped by the join:  {n_dropped_join}")
 
@@ -227,8 +271,11 @@ def print_summary(
     print(f"Final column count:        {len(output_df.columns)}")
 
     print("\n--- PCA explained variance retained -----------------------------------")
-    print(f"  title embeddings   (768 -> {N_PCA_COMPONENTS}): {title_pca.explained_variance_ratio_.sum() * 100:.1f}%")
-    print(f"  thumbnail embeddings (512 -> {N_PCA_COMPONENTS}): {thumb_pca.explained_variance_ratio_.sum() * 100:.1f}%")
+    print(f"  title embeddings ({title_pca.n_features_in_} -> {N_PCA_COMPONENTS}): {title_pca.explained_variance_ratio_.sum() * 100:.1f}%")
+    print(
+        f"  thumbnail embeddings [{thumbnail_encoder}] "
+        f"({thumb_pca.n_features_in_} -> {N_PCA_COMPONENTS}): {thumb_pca.explained_variance_ratio_.sum() * 100:.1f}%"
+    )
 
     print("\n--- Target column statistics -------------------------------------------")
     for col in ["target_log_vinf_rel", "target_log_tau"]:
@@ -239,6 +286,10 @@ def print_summary(
             f"mean={series.mean():.4f}  median={series.median():.4f}  std={series.std():.4f}  "
             f"non-finite={n_non_finite}"
         )
+
+    print(f"\nFeatures saved to {features_out}")
+    print(f"Thumbnail PCA saved to {thumbnail_pca_out}")
+    print(f"Channel medians saved to {channel_medians_out}")
     print(line)
 
 

@@ -1,6 +1,7 @@
-"""Model training stage: trains two XGBoost regressors on ml/data/features.csv
-- one for target_log_vinf_rel, one for target_log_tau - and evaluates them by
-reconstructing full 7-day view curves, not just comparing raw parameters.
+"""Model training stage: trains two XGBoost regressors on the assembled
+features table - one for target_log_vinf_rel, one for target_log_tau - and
+evaluates them by reconstructing full 7-day view curves, not just comparing
+raw parameters.
 
 Splits by channel (never by row) so no channel appears in both train and
 test - otherwise the model could learn channel identity instead of
@@ -9,16 +10,24 @@ against three baselines (channel median, global median, metadata-only
 ablation) using the same curve-reconstruction evaluation, and reports
 feature importance for both models.
 
-Reads ml/data/features.csv and ml/models/channel_medians.json. Writes
-ml/models/vinf_model.joblib, ml/models/tau_model.joblib, and
-ml/models/evaluation.json.
+Reads ml/data/features_{clip,dinov3}.csv (selected via --thumbnail-encoder)
+and the matching ml/models/channel_medians_{clip,dinov3}.json. Writes
+ml/models/vinf_model_{clip,dinov3}.joblib, ml/models/tau_model_{clip,dinov3}.joblib,
+and ml/models/evaluation_{clip,dinov3}.json.
+
+The channel train/test split is pinned to the one recorded in the original
+ml/models/evaluation.json (the pre-existing CLIP run) rather than recomputed
+per encoder, so RMSLE numbers stay directly comparable across encoders - see
+REFERENCE_EVALUATION_JSON below.
 
 Usage:
     python ml/train_model.py
+    python ml/train_model.py --thumbnail-encoder dinov3
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -30,11 +39,31 @@ from xgboost import XGBRegressor
 DATA_DIR = Path(__file__).resolve().parent / "data"
 MODELS_DIR = Path(__file__).resolve().parent / "models"
 
-FEATURES_CSV = DATA_DIR / "features.csv"
-CHANNEL_MEDIANS_JSON = MODELS_DIR / "channel_medians.json"
-VINF_MODEL_OUT = MODELS_DIR / "vinf_model.joblib"
-TAU_MODEL_OUT = MODELS_DIR / "tau_model.joblib"
-EVALUATION_OUT = MODELS_DIR / "evaluation.json"
+# The original (pre-dual-encoder) CLIP run's evaluation.json. Its "split" is
+# reused as-is for every encoder so the same four held-out channels are
+# always the test set, keeping RMSLE comparable; its "full_model" RMSLE is
+# also the "recorded CLIP results" a DINOv3 run compares itself against.
+REFERENCE_EVALUATION_JSON = MODELS_DIR / "evaluation.json"
+# Fallback if that file has never been produced - recorded CLIP results as of
+# this comparison (see REFERENCE_EVALUATION_JSON docstring above).
+FALLBACK_CLIP_RMSLE = {"overall": 1.42, "day1": 1.42, "day3": 1.39, "day7": 1.37}
+
+THUMBNAIL_ENCODER_CONFIGS = {
+    "clip": {
+        "features_csv": DATA_DIR / "features_clip.csv",
+        "channel_medians_json": MODELS_DIR / "channel_medians_clip.json",
+        "vinf_model_out": MODELS_DIR / "vinf_model_clip.joblib",
+        "tau_model_out": MODELS_DIR / "tau_model_clip.joblib",
+        "evaluation_out": MODELS_DIR / "evaluation_clip.json",
+    },
+    "dinov3": {
+        "features_csv": DATA_DIR / "features_dinov3.csv",
+        "channel_medians_json": MODELS_DIR / "channel_medians_dinov3.json",
+        "vinf_model_out": MODELS_DIR / "vinf_model_dinov3.joblib",
+        "tau_model_out": MODELS_DIR / "tau_model_dinov3.joblib",
+        "evaluation_out": MODELS_DIR / "evaluation_dinov3.json",
+    },
+}
 
 TEST_FRACTION = 0.2
 NON_FEATURE_COLUMNS = ["video_id", "channel_id", "v_inf", "tau", "target_log_vinf_rel", "target_log_tau"]
@@ -59,6 +88,28 @@ def sanitize_feature_name(name: str) -> str:
     'size_tier_Micro (<1K)' hit this, so swap the offending characters for
     plain text rather than touching features.csv itself."""
     return name.replace("<", "lt").replace(">", "gt").replace("[", "(").replace("]", ")")
+
+
+def get_reference_split(df: pd.DataFrame) -> tuple[list[str], list[str]]:
+    """Train/test channel split, pinned across encoder runs for comparable
+    RMSLE. Reuses the split recorded in REFERENCE_EVALUATION_JSON (the
+    original CLIP run) when it exists; otherwise falls back to a fresh
+    split_channels() split, which then becomes the de facto reference for
+    any later runs (since evaluation_clip.json no longer overwrites the
+    legacy REFERENCE_EVALUATION_JSON path)."""
+    if REFERENCE_EVALUATION_JSON.exists():
+        with REFERENCE_EVALUATION_JSON.open() as f:
+            split = json.load(f)["split"]
+        print(
+            f"[train_model] reusing channel split from {REFERENCE_EVALUATION_JSON} "
+            f"({split['n_test_channels']} test channels) for cross-encoder comparability"
+        )
+        return split["train_channels"], split["test_channels"]
+    print(
+        f"[train_model] no reference split at {REFERENCE_EVALUATION_JSON} - "
+        "computing a fresh split (this run's channels become the reference)"
+    )
+    return split_channels(df, TEST_FRACTION)
 
 
 def split_channels(df: pd.DataFrame, test_fraction: float) -> tuple[list[str], list[str]]:
@@ -138,11 +189,22 @@ def predict_curve_params(
 
 
 def main() -> None:
-    df = pd.read_csv(FEATURES_CSV)
-    with CHANNEL_MEDIANS_JSON.open() as f:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--thumbnail-encoder",
+        choices=sorted(THUMBNAIL_ENCODER_CONFIGS),
+        default="clip",
+        help="Which thumbnail-encoder feature set to train on (default: clip)",
+    )
+    args = parser.parse_args()
+    encoder_config = THUMBNAIL_ENCODER_CONFIGS[args.thumbnail_encoder]
+    print(f"[train_model] thumbnail encoder: {args.thumbnail_encoder}")
+
+    df = pd.read_csv(encoder_config["features_csv"])
+    with encoder_config["channel_medians_json"].open() as f:
         channel_medians = json.load(f)
 
-    train_channels, test_channels = split_channels(df, TEST_FRACTION)
+    train_channels, test_channels = get_reference_split(df)
     train_df = df[df["channel_id"].isin(train_channels)].reset_index(drop=True)
     test_df = df[df["channel_id"].isin(test_channels)].reset_index(drop=True)
 
@@ -208,8 +270,8 @@ def main() -> None:
     tau_importance = restore_names(top_feature_importance(tau_model, TOP_N_IMPORTANCE))
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump(vinf_model, VINF_MODEL_OUT)
-    joblib.dump(tau_model, TAU_MODEL_OUT)
+    joblib.dump(vinf_model, encoder_config["vinf_model_out"])
+    joblib.dump(tau_model, encoder_config["tau_model_out"])
 
     evaluation = {
         "split": {
@@ -233,17 +295,19 @@ def main() -> None:
             "tau_model_top20_gain": tau_importance,
         },
     }
-    with EVALUATION_OUT.open("w") as f:
+    evaluation_out = encoder_config["evaluation_out"]
+    with evaluation_out.open("w") as f:
         json.dump(evaluation, f, indent=2)
 
-    print_report(evaluation)
+    print_report(evaluation, args.thumbnail_encoder, encoder_config)
 
 
-def print_report(evaluation: dict) -> None:
+def print_report(evaluation: dict, thumbnail_encoder: str, encoder_config: dict) -> None:
     line = "=" * 78
     print(line)
     print("TRAIN_MODEL SUMMARY")
     print(line)
+    print(f"Thumbnail encoder:         {thumbnail_encoder}")
 
     split = evaluation["split"]
     print("\n--- Channel split (by video count, not channel count) --------------------")
@@ -265,6 +329,9 @@ def print_report(evaluation: dict) -> None:
     _print_metrics("Baseline: global median curve", evaluation["baselines"]["global_median"])
     _print_metrics("Baseline: metadata-only (embeddings removed)", evaluation["baselines"]["metadata_only_ablation"])
 
+    if thumbnail_encoder == "dinov3":
+        print_clip_comparison(evaluation)
+
     print("\n--- Feature importance: target_log_vinf_rel model (top 20 by gain) --------")
     for name, gain in evaluation["feature_importance"]["vinf_model_top20_gain"]:
         print(f"    {name:<28} {gain:.2f}")
@@ -273,9 +340,34 @@ def print_report(evaluation: dict) -> None:
     for name, gain in evaluation["feature_importance"]["tau_model_top20_gain"]:
         print(f"    {name:<28} {gain:.2f}")
 
-    print(f"\nModels saved to {VINF_MODEL_OUT} and {TAU_MODEL_OUT}")
-    print(f"Evaluation written to {EVALUATION_OUT}")
+    print(f"\nModels saved to {encoder_config['vinf_model_out']} and {encoder_config['tau_model_out']}")
+    print(f"Evaluation written to {encoder_config['evaluation_out']}")
     print(line)
+
+
+def print_clip_comparison(evaluation: dict) -> None:
+    """DINOv3 full-model RMSLE against the recorded CLIP results, plus the
+    DINOv3 feature set's own metadata-only ablation, so the value of the
+    embeddings themselves is visible for both encoders side by side."""
+    clip_rmsle = dict(FALLBACK_CLIP_RMSLE)
+    source = "hardcoded (recorded CLIP results)"
+    if REFERENCE_EVALUATION_JSON.exists():
+        with REFERENCE_EVALUATION_JSON.open() as f:
+            clip_full_model = json.load(f)["full_model"]
+        clip_rmsle = {period: clip_full_model[period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}
+        source = str(REFERENCE_EVALUATION_JSON)
+
+    dinov3_rmsle = {period: evaluation["full_model"][period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}
+    ablation_rmsle = {period: evaluation["baselines"]["metadata_only_ablation"][period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}
+
+    print("\n--- DINOv3 vs CLIP: RMSLE comparison (test set) ---------------------------")
+    print(f"  CLIP reference: {source}")
+    header = f"  {'period':<8} {'CLIP':>10} {'DINOv3':>10} {'DINOv3 (metadata-only ablation)':>34}"
+    print(header)
+    for period in ["overall", "day1", "day3", "day7"]:
+        print(
+            f"  {period:<8} {clip_rmsle[period]:>10.4f} {dinov3_rmsle[period]:>10.4f} {ablation_rmsle[period]:>34.4f}"
+        )
 
 
 if __name__ == "__main__":
