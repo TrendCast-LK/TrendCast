@@ -168,26 +168,25 @@ def vector_literal(values: np.ndarray) -> str:
     return "[" + ",".join(repr(float(x)) for x in values) + "]"
 
 
-def embed_video_titles(model, videos: List[Dict[str, Any]]) -> Dict[str, np.ndarray]:
-    """Batch-embed titles, matching ml/embed_titles.py's null handling:
-    null/empty titles get a zero vector rather than an embedded empty string."""
-    embedding_dim = (
-        model.get_embedding_dimension()
-        if hasattr(model, "get_embedding_dimension")
-        else model.get_sentence_embedding_dimension()
-    )
-
-    non_empty = [(v["video_id"], (v["title"] or "").strip()) for v in videos]
-    ids_to_encode = [vid for vid, title in non_empty if title]
-    titles_to_encode = [title for vid, title in non_empty if title]
-
-    encoded = embed_titles(model, titles_to_encode) if titles_to_encode else np.empty((0, embedding_dim), dtype=np.float32)
-
-    embeddings: Dict[str, np.ndarray] = {
-        vid: np.zeros(embedding_dim, dtype=np.float32) for vid, title in non_empty if not title
+def get_missing_titles(videos: List[Dict[str, Any]]) -> Dict[str, str]:
+    """video_ids whose title is null/empty — treated as a failure, not a
+    zero vector, so they get retried next run instead of being permanently
+    marked "done" with a meaningless embedding."""
+    return {
+        v["video_id"]: "missing/empty title"
+        for v in videos
+        if not (v["title"] or "").strip()
     }
-    embeddings.update(zip(ids_to_encode, encoded))
-    return embeddings
+
+
+def embed_video_titles(model, videos: List[Dict[str, Any]]) -> Dict[str, np.ndarray]:
+    """Batch-embed titles. Callers must pre-filter out videos with a
+    missing/empty title (see get_missing_titles) — every title here is
+    encoded as-is."""
+    video_ids = [v["video_id"] for v in videos]
+    titles = [v["title"].strip() for v in videos]
+    encoded = embed_titles(model, titles)
+    return dict(zip(video_ids, encoded))
 
 
 def embed_video_thumbnails(
@@ -253,7 +252,15 @@ def main() -> None:
         for video_id, reason in download_failures.items():
             log.warning("Skipping %s — thumbnail download failed: %s", video_id, reason)
 
-        embeddable_videos = [v for v in videos if v["video_id"] in images_by_id]
+        title_failures = get_missing_titles(videos)
+        for video_id in title_failures:
+            log.warning("Skipping %s — missing/empty title", video_id)
+
+        embeddable_videos = [
+            v for v in videos if v["video_id"] in images_by_id and v["video_id"] not in title_failures
+        ]
+        embeddable_ids = {v["video_id"] for v in embeddable_videos}
+        images_by_id = {vid: img for vid, img in images_by_id.items() if vid in embeddable_ids}
 
         log.info("Loading embedding models (LaBSE + CLIP)...")
         title_model = load_title_model(device)
@@ -268,16 +275,17 @@ def main() -> None:
                 "title_embedding": vector_literal(title_embeddings[video_id]),
                 "thumbnail_embedding": vector_literal(thumbnail_embeddings[video_id]),
             }
-            for video_id in images_by_id
+            for video_id in embeddable_ids
         ]
 
         inserted = insert_video_features(conn, rows)
 
+        skipped = len(videos) - len(embeddable_videos)
         log.info(
             "Job 3 complete — processed %d, inserted %d, skipped/failed %d",
             len(videos),
             inserted,
-            len(download_failures),
+            skipped,
         )
 
     finally:
