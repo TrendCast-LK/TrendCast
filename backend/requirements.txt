@@ -3,6 +3,10 @@ uvicorn
 psycopg2-binary
 python-dotenv
 pydantic
+python-multipart
+bcrypt
+pyjwt
+email-validator
 
 # Forecasting model inference (see inference.py)
 numpy

@@ -354,7 +354,19 @@ def run_forecast(
     channel_id: str | None,
 ) -> dict:
     image = download_thumbnail(thumbnail_url)
+    return run_forecast_on_image(state, title, image, scheduled_upload_time, channel_id)
 
+
+def run_forecast_on_image(
+    state: InferenceState,
+    title: str,
+    image: Image.Image,
+    scheduled_upload_time: datetime,
+    channel_id: str | None,
+) -> dict:
+    """Same pipeline as run_forecast, for a thumbnail already loaded in memory
+    (e.g. an uploaded file) - avoids an HTTP round-trip through
+    download_thumbnail for callers that already have the image bytes."""
     title_pcs = embed_title(state, title)
     thumb_pcs = embed_thumbnail(state, image)
     upload_hour, upload_dayofweek, is_weekend = compute_upload_timing(scheduled_upload_time)
@@ -396,4 +408,5 @@ def run_forecast(
         "v_inf": v_inf,
         "tau": tau,
         "used_channel_context": used_channel_context,
+        "avg_views_per_video": float(channel_stats["avg_views_per_video"]),
     }

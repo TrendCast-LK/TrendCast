@@ -2,7 +2,7 @@
 
 ## Database (Supabase / PostgreSQL)
 
-Schema is defined in [youtube-etl-pipeline/postgres/init/01_schema.sql](youtube-etl-pipeline/postgres/init/01_schema.sql), applied automatically on first container start. A second migration, [02_archive_and_switch_channels.sql](youtube-etl-pipeline/postgres/init/02_archive_and_switch_channels.sql), adds `channel_stats_archive`, `videos_archive`, and `view_timeseries_archive` tables that snapshot rows before a channel-set rotation — mirror copies of the core tables below plus `archive_id`/`archived_at`.
+Schema is defined in [youtube-etl-pipeline/postgres/init/01_schema.sql](youtube-etl-pipeline/postgres/init/01_schema.sql), applied automatically on first container start. A second migration, [02_archive_and_switch_channels.sql](youtube-etl-pipeline/postgres/init/02_archive_and_switch_channels.sql), adds `channel_stats_archive`, `videos_archive`, and `view_timeseries_archive` tables that snapshot rows before a channel-set rotation — mirror copies of the core tables below plus `archive_id`/`archived_at`. A third, [03_app_backend.sql](youtube-etl-pipeline/postgres/init/03_app_backend.sql), adds the `users`/`predictions`/`notifications` tables backing the FastAPI app layer (see "App-layer tables" below). These init scripts only auto-apply to a fresh local Postgres container — against the live Supabase DB they must be applied manually (e.g. `psql "$SUPABASE_DB_URL" -f path/to/migration.sql`).
 
 ### Connection pattern
 
@@ -41,6 +41,24 @@ Schema is defined in [youtube-etl-pipeline/postgres/init/01_schema.sql](youtube-
 - `size_tier` — categorical bucket from `subscriber_count`: Micro (<1K), Small (1K–10K), Mid (10K–100K), Large (100K–1M), Mega (1M+)
 - `channel_age_days` — days since `published_at`
 - All ratio calculations are divide-by-zero guarded (`CASE WHEN ... > 0`)
+
+### App-layer tables (backend/)
+
+Added by `03_app_backend.sql`, owned by the FastAPI backend (not the ETL pipeline). Plain `BIGSERIAL` PKs, no UUIDs.
+
+**`users`** — one row per app account (email/password auth, JWT issued on login).
+- `full_name`, `email` (unique), `password_hash` (bcrypt)
+- `subscribers`, `monthly_views` (`BIGINT`, self-reported baseline used as prediction context — editable in Settings, not scraped)
+- `channel_url` (pasted at signup), `channel_data` (`JSONB` snapshot fetched from the YouTube Data API — title, description, thumbnail_url, banner_url, country, published_at, subscriber_count, view_count, video_count, subscriber_hidden, channel_id, fetched_at), `channel_fetch_error`
+- Kept separate from `channel_stats`: that table is the ETL's tracked forecasting-dataset channels, not a per-user profile cache. If a user's resolved `channel_data.channel_id` happens to also exist in `channel_stats`, `/predictions` picks up real channel context for the model; otherwise it falls back to dataset-wide medians (see `backend/inference.py`'s `get_channel_stats`).
+
+**`predictions`** — one row per saved/run prediction (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
+- `title`, `category`, `tags` (`TEXT[]`), `target_date`, `target_time`, `thumbnail_path`/`dataset_path` (served from `/uploads`)
+- `status` (`draft` | `complete`) — drafts skip the model call entirely
+- `predicted_views`, `confidence` (heuristic, not a model output — see `backend/routers/predictions.py`), `change_vs_avg`, `trajectory` (`JSONB` curve), `v_inf`, `tau`, `used_channel_context`
+
+**`notifications`** — one row per in-app notification (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
+- `type` (`welcome` | `channel_fetch_success` | `channel_fetch_error` | `prediction_complete`), `title`, `message`, `read`
 
 ### Polling cadence (Job 2)
 
