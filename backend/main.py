@@ -1,12 +1,27 @@
+from contextlib import asynccontextmanager
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from db import get_cursor
-from models import ChannelStatsEnriched, ForecastPoint, ForecastRequest, Video, ViewTimeseries
+from inference import ThumbnailDownloadError, get_state, load_artifacts, run_forecast
+from models import (
+    ChannelStatsEnriched,
+    ForecastRequest,
+    ForecastResponse,
+    Video,
+    ViewTimeseries,
+)
 
-app = FastAPI(title="Trendcast API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_artifacts()
+    yield
+
+
+app = FastAPI(title="Trendcast API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,16 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# PLACEHOLDER: hardcoded mock cumulative view curve, standing in until the
-# real forecasting model is trained and wired up. Ignores the request body.
-MOCK_CUMULATIVE_VIEW_CURVE = [
-    1200, 2600, 4300, 6100, 8000, 9800, 11500,
-    13100, 14600, 16000, 17300, 18500, 19600, 20600,
-    21500, 22300, 23000, 23600, 24100, 24550, 24950,
-    25300, 25600, 25850, 26050, 26200, 26320, 26410,
-    26470, 26500,
-]
 
 TIMESERIES_BY_VIDEO_SQL = """
     SELECT
@@ -104,14 +109,36 @@ def get_video_timeseries(video_id: str):
     return [dict(zip(columns, row)) for row in rows]
 
 
-@app.post("/forecast", response_model=List[ForecastPoint])
+@app.get("/forecast/health")
+def forecast_health():
+    state = get_state()
+    return {
+        "ready": state.ready,
+        "error": state.error,
+        "device": state.device,
+        "load_time_seconds": state.load_time_seconds,
+    }
+
+
+@app.post("/forecast", response_model=ForecastResponse)
 def forecast(request: ForecastRequest):
-    # PLACEHOLDER: returns the hardcoded mock curve regardless of input.
-    # Replace with a call to the real forecasting model once it exists.
-    return [
-        {"day": day, "views": views}
-        for day, views in enumerate(MOCK_CUMULATIVE_VIEW_CURVE, start=1)
-    ]
+    state = get_state()
+    if not state.ready:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Forecast model artifacts are not available: {state.error}",
+        )
+
+    try:
+        return run_forecast(
+            state,
+            title=request.title,
+            thumbnail_url=request.thumbnail_url,
+            scheduled_upload_time=request.scheduled_upload_time,
+            channel_id=request.channel_id,
+        )
+    except ThumbnailDownloadError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/channels/{channel_id}/videos", response_model=List[Video])

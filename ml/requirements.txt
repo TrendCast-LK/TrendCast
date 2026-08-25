@@ -1,0 +1,15 @@
+psycopg2-binary
+python-dotenv
+pandas
+numpy
+scipy
+matplotlib
+requests
+Pillow
+torch
+sentence-transformers
+transformers
+tqdm
+scikit-learn
+joblib
+xgboost

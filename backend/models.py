@@ -1,7 +1,7 @@
 """Pydantic response models mirroring database views/tables."""
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -48,8 +48,16 @@ class ForecastRequest(BaseModel):
     title: str
     thumbnail_url: str
     scheduled_upload_time: datetime
+    channel_id: Optional[str] = None
 
 
 class ForecastPoint(BaseModel):
     day: int
     views: int
+
+
+class ForecastResponse(BaseModel):
+    curve: List[ForecastPoint]
+    v_inf: float
+    tau: float
+    used_channel_context: bool

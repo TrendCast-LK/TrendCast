@@ -310,14 +310,41 @@ h1 {
 
 /* Forecast form */
 
-.notice-banner {
-  background: var(--warning-bg);
-  border: 1px solid var(--warning-border);
-  color: var(--warning-text);
+.context-note {
+  background: var(--accent-soft);
+  color: var(--accent);
   border-radius: 10px;
-  padding: 14px 18px;
-  margin-bottom: 24px;
-  font-size: 14px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.forecast-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .forecast-form {
@@ -342,7 +369,8 @@ h1 {
   color: var(--text-muted);
 }
 
-.field input {
+.field input,
+.field select {
   font: inherit;
   font-weight: 400;
   color: var(--text);
@@ -352,9 +380,16 @@ h1 {
   padding: 10px 12px;
 }
 
-.field input:focus {
+.field input:focus,
+.field select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.field-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 .forecast-form .btn-primary {

@@ -38,7 +38,7 @@ export function getVideoTimeseries(videoId) {
   return request(`/videos/${encodeURIComponent(videoId)}/timeseries`)
 }
 
-export function postForecast({ title, thumbnailUrl, scheduledUploadTime }) {
+export function postForecast({ title, thumbnailUrl, scheduledUploadTime, channelId }) {
   return request('/forecast', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,6 +46,7 @@ export function postForecast({ title, thumbnailUrl, scheduledUploadTime }) {
       title,
       thumbnail_url: thumbnailUrl,
       scheduled_upload_time: scheduledUploadTime,
+      channel_id: channelId || undefined,
     }),
   })
 }
