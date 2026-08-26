@@ -1,69 +1,140 @@
 # TrendCast
 
-TrendCast tracks YouTube channels and videos for Sri Lankan content creators and
-forecasts view-count trajectories for planned uploads.
+TrendCast helps Sri Lankan YouTube creators guess how a video will
+perform **before they upload it**.
 
-The repo is split into three parts that share one Supabase/PostgreSQL database:
+You give it a title, a thumbnail, and a planned upload time. It gives
+you back a 7-day view forecast, based on a model trained on real view
+histories from tracked channels.
 
-```
-youtube-etl-pipeline/   ETL pipeline: Kafka + Spark + Airflow, collects channel
-                         and video stats into Postgres. Runs on schedule via
-                         GitHub Actions (.github/workflows/youtube_etl.yml) or
-                         locally via Docker Compose.
-backend/                FastAPI service that reads from the same database and
-                         serves channels, videos, timeseries, and forecasts,
-                         plus a full app layer (accounts, per-user channel
-                         binding, saved predictions, notifications) backing
-                         the frontend below.
-frontend/                Vite + React UI ("ViewCast"): sign up/sign in, a
-                         dashboard, a prediction workflow with thumbnail
-                         upload, trends, channel data, and settings.
-```
+## How it works, in short
 
-## Data flow
+1. A pipeline pulls channel and video stats from YouTube into a database.
+2. That data trains a model offline (title + thumbnail + channel stats →
+   predicted view growth).
+3. A backend loads the trained model and serves forecasts.
+4. A web dashboard lets creators sign up, connect their channel, and run
+   predictions.
+
+## Architecture
 
 ```
 YouTube Data API v3
         │
         ▼
-youtube-etl-pipeline (Kafka → Spark → Airflow)
+GitHub Actions (scheduled jobs, plain Python + Postgres — no Kafka/Spark)
+  • Job 1: channel + new-video ingestion, every 12h
+  • Job 2: view-count polling, every 5 min (faster for brand-new videos)
+  • Job 3: caches title/thumbnail embeddings, every 12h
         │
         ▼
-Supabase / PostgreSQL  (channel_stats, videos, view_timeseries, ...)
+Supabase / PostgreSQL
+  channel_stats · videos · view_timeseries · video_features
+  users · predictions · notifications
         │
+        ├──────────────► ml/  (offline, run by hand)
+        │                 extract → fit curves → build features
+        │                 → train XGBoost models
+        │                         │
+        │                         ▼ (model files, copied by hand)
         ▼
-backend (FastAPI)  ──►  frontend (React)
+backend/ (FastAPI)  ──serves──►  frontend/ (React, "ViewCast")
+  loads the trained model,           sign up, connect a channel,
+  serves /forecast + full            run predictions, see trends
+  app API (auth, predictions,
+  notifications)
 ```
 
-All three parts read/write the same database via the `SUPABASE_DB_URL`
-connection string — there is no separate database config per component.
+All parts share one database, via the `SUPABASE_DB_URL` connection string.
 
-## Getting started
+## Tech stack
 
-Each part has its own setup instructions:
+| Layer | Tech |
+| --- | --- |
+| Data collection | GitHub Actions (cron) + Python, YouTube Data API v3 |
+| Database | Supabase (PostgreSQL + pgvector) |
+| Model training | Python, XGBoost, LaBSE (title embeddings), CLIP (thumbnail embeddings), scikit-learn PCA |
+| Backend API | FastAPI, psycopg2, JWT auth |
+| Frontend | React 19 + Vite, Tailwind CSS, Chart.js |
 
-- **ETL pipeline** — see [youtube-etl-pipeline/README.md](youtube-etl-pipeline/README.md)
-  for Docker Compose setup, Airflow DAGs, and the database schema.
-- **Backend** — from `backend/`, install `requirements.txt`, set
-  `SUPABASE_DB_URL`, `JWT_SECRET_KEY`, and `YOUTUBE_API_KEY` (see
-  `backend/.env.example`), and run `uvicorn main:app --reload`. It serves on
-  `http://127.0.0.1:8000` and exposes:
-  - ETL-backed data: `/health`, `/channels`, `/channels/{channel_id}/videos`,
-    `/videos/{video_id}/timeseries`, `/forecast`.
-  - App layer (JWT-authenticated, `Authorization: Bearer <token>` except
-    signup/login): `/auth/signup`, `/auth/login`, `/auth/me`,
-    `/auth/change-password`, `/channel/me`, `/channel/refresh`,
-    `/notifications`, `/dashboard/summary`, `/trends/summary`, and
-    `/predictions` (CRUD, with thumbnail upload served back from `/uploads`).
-- **Frontend** — see [frontend/README.md](frontend/README.md) for install and run
-  instructions (`npm install && npm run dev`, served at `http://localhost:5173`).
+## Repo layout
 
-Database schema and table reference live in [CLAUDE.md](CLAUDE.md).
+| Folder | What it is |
+| --- | --- |
+| [youtube-etl-pipeline/](youtube-etl-pipeline/README.md) | Data collection jobs (GitHub Actions), database schema |
+| [backend/](backend/README.md) | FastAPI service — serves forecasts, auth, predictions, notifications |
+| [ml/](ml/README.md) | Offline pipeline that trains the forecast model |
+| [frontend/](frontend/README.md) | React dashboard ("ViewCast") |
+| [CLAUDE.md](CLAUDE.md) | Full database table reference |
+
+## Quickstart
+
+Get the backend and frontend running locally. (You need a Supabase/Postgres
+database already set up and reachable — see
+[youtube-etl-pipeline/README.md](youtube-etl-pipeline/README.md) for the
+schema.)
+
+```bash
+# Backend
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Mac/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env            # fill in SUPABASE_DB_URL, YOUTUBE_API_KEY, JWT_SECRET_KEY
+uvicorn main:app --reload       # http://127.0.0.1:8000 — takes ~20s to load ML models
+```
+
+```bash
+# Frontend, in a second terminal
+cd frontend
+npm install
+cp .env.example .env            # points at http://localhost:8000 by default
+npm run dev                     # http://localhost:5173
+```
+
+Open `http://localhost:5173`, sign up with a real YouTube channel URL, and
+run a prediction.
+
+Each part's README has the full details — env vars, endpoints, key files,
+known gaps.
 
 ## Status
 
-`/forecast` and `/predictions` run the real trained model (see
-`backend/inference.py`) against the artifacts in `backend/models/`. Channel,
-video, and timeseries data reflects live data collected by the ETL pipeline.
-A prediction's `confidence` is a heuristic based on whether real channel
-context was available, not a model-produced uncertainty estimate.
+**Working today:**
+
+- All three data-collection jobs run live on GitHub Actions.
+- `/forecast` and `/predictions` call the real trained model (not a stub)
+  — see `backend/inference.py`.
+- Full account system: signup/login, per-user channel binding, saved
+  predictions, notifications.
+- Feature-computation logic (embeddings, PCA, feature assembly) is shared
+  between training (`ml/`) and serving (`backend/`) through `ml/services/`
+  — this was a refactor to stop the two from drifting apart, and it's
+  merged to `main`.
+- A `video_features` table caches title/thumbnail embeddings so future
+  retraining doesn't have to re-embed every video — also merged to `main`.
+
+**Manual / not automated:**
+
+- Retraining the model (`ml/train_model.py` and the steps before it) is
+  run by hand locally. Nothing schedules it.
+- After retraining, the new model files are copied by hand from
+  `ml/models/` into `backend/models/`.
+- The `ml/` training scripts don't yet read from the new `video_features`
+  cache — they still compute embeddings from scratch each time. Wiring
+  that up is planned but not done.
+
+**Not built:**
+
+- No admin or monitoring dashboard. The frontend only has creator-facing
+  pages.
+- No automated test suite for the backend or frontend. The ETL pipeline
+  has one small test file (`youtube-etl-pipeline/tests/test_key_pool.py`).
+
+**A prediction's `confidence` number is a heuristic** (fixed at 0.85 or
+0.55 depending on whether a real channel match was found), not a model
+uncertainty estimate. See `backend/routers/predictions.py`.
+
+**Note on the ETL folder:** `youtube-etl-pipeline/` also contains an older
+Kafka + Spark + Airflow setup (via `docker-compose.yml`). That is **not**
+what runs in production — see that folder's README for details.
