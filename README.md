@@ -52,9 +52,9 @@ All parts share one database, via the `SUPABASE_DB_URL` connection string.
 | Layer | Tech |
 | --- | --- |
 | Data collection | GitHub Actions (cron) + Python, YouTube Data API v3 |
-| Database | Supabase (PostgreSQL + pgvector) |
-| Model training | Python, XGBoost, LaBSE (title embeddings), CLIP (thumbnail embeddings), scikit-learn PCA |
-| Backend API | FastAPI, psycopg2, JWT auth |
+| Database | Supabase (PostgreSQL) |
+| Model training | Python, CatBoost, sentence-transformers (CLIP + multilingual CLIP for embeddings), scikit-learn PCA |
+| Model serving | FastAPI, CatBoost, CLIP embeddings, cached PCA transforms, 6h channel history cache |
 | Frontend | React 19 + Vite, Tailwind CSS, Chart.js |
 
 ## Repo layout
@@ -103,38 +103,29 @@ known gaps.
 **Working today:**
 
 - All three data-collection jobs run live on GitHub Actions.
-- `/forecast` and `/predictions` call the real trained model (not a stub)
-  — see `backend/inference.py`.
-- Full account system: signup/login, per-user channel binding, saved
-  predictions, notifications.
-- Feature-computation logic (embeddings, PCA, feature assembly) is shared
-  between training (`ml/`) and serving (`backend/`) through `ml/services/`
-  — this was a refactor to stop the two from drifting apart, and it's
-  merged to `main`.
-- A `video_features` table caches title/thumbnail embeddings so future
-  retraining doesn't have to re-embed every video — also merged to `main`.
+- The forecast model is trained offline with CatBoost (`artifacts/export_artifacts.py`):
+  - Six models: magnitude (V_inf multiplier), shape family (logistic vs power), and four shape parameters (k, t0, c, theta).
+  - Reference validation: **0.24% mean relative error** on 20 held-out rows.
+- `/forecast` and `/predictions` call the real trained models (not a stub) — see `backend/inference.py`.
+  - Loads artifacts once at startup (~25s).
+  - Returns point estimate + uncertainty range (low/high bounds).
+  - Fetches channel history from YouTube API to compute the baseline (S), cached 6h per channel.
+- Full account system: signup/login, per-user channel binding, saved predictions, notifications.
+- Feature-computation logic (embeddings, PCA, feature assembly) is shared between training (`ml/`) and serving (`backend/`) through `ml/services/` — prevents feature drift.
 
 **Manual / not automated:**
 
-- Retraining the model (`ml/train_model.py` and the steps before it) is
-  run by hand locally. Nothing schedules it.
-- After retraining, the new model files are copied by hand from
-  `ml/models/` into `backend/models/`.
-- The `ml/` training scripts don't yet read from the new `video_features`
-  cache — they still compute embeddings from scratch each time. Wiring
-  that up is planned but not done.
+- Retraining the model (the full ML pipeline up to `export_artifacts.py`) is run by hand locally. Nothing schedules it.
+- The `artifacts/` folder contains the trained CatBoost models and PCA transforms; they're loaded directly by the backend at startup.
+- The `ml/` training scripts don't yet read from the new `video_features` embedding cache — they still compute embeddings from scratch each time. Wiring that up is planned but not done.
 
 **Not built:**
 
-- No admin or monitoring dashboard. The frontend only has creator-facing
-  pages.
-- No automated test suite for the backend or frontend. The ETL pipeline
-  has one small test file (`youtube-etl-pipeline/tests/test_key_pool.py`).
+- No admin or monitoring dashboard. The frontend only has creator-facing pages.
+- No automated test suite for the backend or frontend. The ETL pipeline has one small test file (`youtube-etl-pipeline/tests/test_key_pool.py`).
 
-**A prediction's `confidence` number is a heuristic** (fixed at 0.85 or
-0.55 depending on whether a real channel match was found), not a model
-uncertainty estimate. See `backend/routers/predictions.py`.
+**Notes:**
 
-**Note on the ETL folder:** `youtube-etl-pipeline/` also contains an older
-Kafka + Spark + Airflow setup (via `docker-compose.yml`). That is **not**
-what runs in production — see that folder's README for details.
+- A prediction's `confidence` number is a heuristic (fixed at 0.85 or 0.55 depending on whether a real channel match was found), not a model uncertainty estimate. See `backend/routers/predictions.py`.
+- The uncertainty range in the forecast response is a fixed-width approximation based on residual_std from training, not a calibrated prediction interval.
+- ETL folder note: `youtube-etl-pipeline/` also contains an older Kafka + Spark + Airflow setup (via `docker-compose.yml`). That is **not** what runs in production — see that folder's README for details.

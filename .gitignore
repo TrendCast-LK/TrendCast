@@ -18,6 +18,9 @@ ENV/
 
 # ML data extracts
 ml/data/
+artifacts/ps_data.csv
+artifacts/timeseries.csv
+artifacts/image_embeddings_checkpoint.npy
 
 # User-uploaded prediction files
 backend/uploads/

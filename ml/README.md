@@ -9,6 +9,9 @@ See the [root README](../README.md) for how this fits into the whole system.
 Everything here runs **locally, by hand**. There is no scheduled retrain —
 someone runs these scripts in order when they want a new model.
 
+**Note:** The scripts here train XGBoost models, but the actual deployment
+uses CatBoost. See "Deployment export" below.
+
 ## Setup
 
 ```bash
@@ -36,6 +39,31 @@ don't commit it).
 | 8 | `build_features.py` | Joins everything, runs PCA on both embedding sets (768→40, 512→40), one-hot encodes categories, and writes the final training table `ml/data/features.csv` plus the PCA/encoder artifacts. |
 | 9 | `train_model.py` | Trains two XGBoost models (one for `V_inf`, one for `tau`), evaluates against baselines, and writes the final model artifacts. |
 
+## Deployment export
+
+After training locally, export the artifacts for deployment:
+
+```bash
+cd artifacts
+python export_artifacts.py
+```
+
+This script:
+- Reads the training corpus, embeddings, and fitted PCA transforms from `ml/`.
+- Retrains six CatBoost models on the **full corpus** (not the train split):
+  - One magnitude model (predicts V_inf multiplier).
+  - One shape-family classifier (logistic vs power).
+  - Four shape parameter regressors (k, t0, c, theta).
+- Writes eleven artifacts to `artifacts/`:
+  - `catboost_*.cbm` — the six trained models
+  - `pca_text.pkl`, `pca_image.pkl` — PCA transforms
+  - `feature_columns.json` — exact feature order for inference
+  - `maturation_curve.json` — view-maturation curve by day
+  - `config.json` — clipping bounds, category list, residual_std, mean embeddings
+  - `reference_predictions.json` — 20 test rows for sanity validation
+
+**After export**, the `backend/` simply loads these artifacts at startup. No manual copying is needed.
+
 Extra diagnostic scripts, not part of the required order:
 
 - `plot_fits.py` — samples 12 videos and saves a chart of curve fits vs.
@@ -44,30 +72,14 @@ Extra diagnostic scripts, not part of the required order:
   `FIRST_OBS_MAX_HOURS` default in `common.py`. Only needs re-running if
   that default changes.
 
-## Where the model artifacts end up
-
-`build_features.py` and `train_model.py` write to `ml/models/`:
-
-| File | What it is |
-| --- | --- |
-| `title_pca.joblib`, `thumbnail_pca.joblib` | Fitted PCA reducers |
-| `categorical_encoder.joblib` | Fitted one-hot encoder |
-| `channel_medians.json` | Per-channel median V_inf, for the inference fallback |
-| `vinf_model.joblib`, `tau_model.joblib` | The trained XGBoost models |
-| `evaluation.json` | Test-set metrics vs. baselines |
-
-**After training, these files must be copied by hand into
-`backend/models/`** for the API to pick up the new model. Nothing
-automates this today.
-
 ## Shared code (`ml/services/`)
 
 Feature-computation logic used by *both* this training pipeline and
 `backend/inference.py` at request time, so training and serving can never
 drift apart:
 
-- `title_embedding.py` — loads LaBSE, encodes titles
-- `thumbnail_embedding.py` — loads CLIP, encodes images
+- `title_embedding.py` — loads LaBSE (training only), encodes titles
+- `thumbnail_embedding.py` — loads CLIP (training only), encodes images
 - `pca.py` — applies a fitted PCA transform
 - `tabular_features.py` — upload-time conversion, title/tag/duration parsing
 - `feature_row.py` — assembles one full feature row, name-sanitized to
@@ -108,9 +120,9 @@ sensitivity and the channel distribution of the usable set).
 
 ## Known gaps
 
-- **Retraining is fully manual.** No scheduled job runs this pipeline —
-  someone runs the 9 steps above by hand, then copies artifacts into
-  `backend/models/` by hand too.
+- **Retraining is fully manual.** No scheduled job runs the 9-step pipeline
+  above. After you run them, you also run `artifacts/export_artifacts.py`
+  to produce the deployment artifacts. Nothing automates either.
 - **The `video_features` embedding cache isn't used here yet.** The ETL
   side now caches title/thumbnail embeddings in a `video_features` Supabase
   table (see

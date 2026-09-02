@@ -46,9 +46,16 @@ class ViewTimeseries(BaseModel):
 
 class ForecastRequest(BaseModel):
     title: str
-    thumbnail_url: str
-    scheduled_upload_time: datetime
+    thumbnail_url: Optional[str] = None
+    scheduled_upload_time: Optional[datetime] = None
     channel_id: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
+    duration: Optional[str] = None
+
+
+class ForecastRange(BaseModel):
+    low: float
+    high: float
 
 
 class ForecastPoint(BaseModel):
@@ -57,10 +64,19 @@ class ForecastPoint(BaseModel):
 
 
 class ForecastResponse(BaseModel):
+    status: str = "ok"
+    channel_baseline: Optional[float] = None
+    multiplier: Optional[float] = None
+    point_estimate_7d: Optional[float] = None
+    range_7d: Optional[ForecastRange] = None
     curve: List[ForecastPoint]
-    v_inf: float
-    tau: float
-    used_channel_context: bool
+    shape_family: Optional[str] = None
+    day1_fraction: Optional[float] = None
+    based_on_videos: Optional[int] = None
+    warnings: List[str] = Field(default_factory=list)
+    v_inf: Optional[float] = None
+    tau: Optional[float] = None
+    used_channel_context: Optional[bool] = None
 
 
 # ---- Auth / users ---------------------------------------------------------
