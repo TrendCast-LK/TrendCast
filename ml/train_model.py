@@ -44,6 +44,7 @@ MODELS_DIR = Path(__file__).resolve().parent / "models"
 # always the test set, keeping RMSLE comparable; its "full_model" RMSLE is
 # also the "recorded CLIP results" a DINOv3 run compares itself against.
 REFERENCE_EVALUATION_JSON = MODELS_DIR / "evaluation.json"
+CURRENT_CLIP_EVALUATION_JSON = MODELS_DIR / "evaluation_clip.json"
 # Fallback if that file has never been produced - recorded CLIP results as of
 # this comparison (see REFERENCE_EVALUATION_JSON docstring above).
 FALLBACK_CLIP_RMSLE = {"overall": 1.42, "day1": 1.42, "day3": 1.39, "day7": 1.37}
@@ -351,11 +352,12 @@ def print_clip_comparison(evaluation: dict) -> None:
     embeddings themselves is visible for both encoders side by side."""
     clip_rmsle = dict(FALLBACK_CLIP_RMSLE)
     source = "hardcoded (recorded CLIP results)"
-    if REFERENCE_EVALUATION_JSON.exists():
-        with REFERENCE_EVALUATION_JSON.open() as f:
+    clip_evaluation_path = CURRENT_CLIP_EVALUATION_JSON if CURRENT_CLIP_EVALUATION_JSON.exists() else REFERENCE_EVALUATION_JSON
+    if clip_evaluation_path.exists():
+        with clip_evaluation_path.open() as f:
             clip_full_model = json.load(f)["full_model"]
         clip_rmsle = {period: clip_full_model[period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}
-        source = str(REFERENCE_EVALUATION_JSON)
+        source = str(clip_evaluation_path)
 
     dinov3_rmsle = {period: evaluation["full_model"][period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}
     ablation_rmsle = {period: evaluation["baselines"]["metadata_only_ablation"][period]["rmsle"] for period in FALLBACK_CLIP_RMSLE}

@@ -1,0 +1,306 @@
+{
+  "split": {
+    "test_fraction_target": 0.2,
+    "train_channels": [
+      "UCckltLEhFLv8Xz_lQhYfwmg",
+      "UCCK3OZi788Ok44K97WAhLKQ",
+      "UCmqflTSJ6911aCrnaWIXxsA",
+      "UC1Q3UfVjchyhbtyJXc_mu5w",
+      "UCh9qXeL8eP3Txra2908xksg",
+      "UCs_mHlm5_C82W5WCIJaSMbQ",
+      "UCr8qGT-Mv9tdCo-aPr06REQ",
+      "UCU5WmQA3Ur1Yriw5pMqoBNQ",
+      "UCu7cGbQEMgGk8TD0ZYucM5g",
+      "UCEUSUxrhCt4n0Pp9WB7q7-w",
+      "UC4UaWbUUwVvCxWNqhb4f16Q",
+      "UC-ss1l2vO46QAgyCsPRIVDA",
+      "UCrjQG1gLZ4cDwIzrGA5pRBw",
+      "UCglXlpWjIi95auM3umWWLdw",
+      "UCDm4BW0Q5d-zASSuRyvPGXw",
+      "UCkysZsPin4y9iQHS-QYygeQ",
+      "UCcrktZCp1tY9eDqrk6fMrsA",
+      "UCRnC_XIuIVFKWphUcLd4MVA",
+      "UCJsN1Mmx4GRA6sCYdfKqpSQ",
+      "UCNFDDKoTezuSWbIjjHA76xQ",
+      "UCwkHQPpM4IvsJZiIwW9_8Ng",
+      "UCwKYO2L9xzLtWhSv4ncYCIA",
+      "UCltN1illHSguno1gokRShxA",
+      "UCnirzf0fEAPfQV__61iwSQQ",
+      "UCHQfFg_epoUK0htwmiUyzEQ",
+      "UC3C6rQHX8pkjSyOm-620k3w",
+      "UCjK3LREYZUrNKnk56Prhe4w",
+      "UCe13xXtdfx_n0_z1qeXV6_g",
+      "UCKA7SQOUkD1_z5lr016Q70w",
+      "UCDO8zlJiV9ZgaMMK2DyX1Dw",
+      "UC8irIP66QzlZNVgqe4vwN9g",
+      "UCYFn7BOOlmL21iNJ6q5IDfg",
+      "UC2Wq8OiU3P9sSRxHpFEe_0Q",
+      "UCGN3TM5lZQ1DAvMwI1LIc8Q",
+      "UCEa6e_J_Xs_GKCzG8Eq15Xw",
+      "UCfK5mYo5nvU4d4vkguhSn6Q",
+      "UCYG2PZN2DImFqoTcj983iqA",
+      "UC6lDrxy3lS4LNRuuBtryqpQ",
+      "UCKEKf35apTUvSLs-c1DCekw",
+      "UCFPySgAumPBFo0VFf8hjCjw",
+      "UCWqN5l7FwMO6-gT8Dg9mx5A",
+      "UCiOEgWwAKbfrVb795hqQc9A",
+      "UC_BPD0TBnFtRExZOhIFEQYQ",
+      "UCBR9iW2qo_7LP9_9u3A2ZeQ",
+      "UCu_V8lfzyGspxP-LNFowW9w",
+      "UCwXfRdTtVeVnXXF4poaYw0Q",
+      "UCETxOvOv9_44-CUzsPlzyxQ",
+      "UCDdPJHmxHCJLH1sDyytCATw"
+    ],
+    "test_channels": [
+      "UCgnFSj7jQffD5V5m05j4dPw",
+      "UCn0XmAUFv6d2tofMFEesSNw",
+      "UCKS1HX4moHCcDBZnM9k4giw",
+      "UCcpCelkp30ukU3ZKUXsU25g"
+    ],
+    "n_train_channels": 48,
+    "n_test_channels": 4,
+    "n_train_videos": 2614,
+    "n_test_videos": 654,
+    "test_video_fraction": 0.20012239902080783
+  },
+  "full_model": {
+    "overall": {
+      "mape": 3.4826603933452915,
+      "rmsle": 1.4493799978599835
+    },
+    "day1": {
+      "mape": 3.7120922729594943,
+      "rmsle": 1.4570226233770747
+    },
+    "day3": {
+      "mape": 2.968787438089805,
+      "rmsle": 1.4250179080470478
+    },
+    "day7": {
+      "mape": 2.6410074773821157,
+      "rmsle": 1.4030527224891691
+    }
+  },
+  "baselines": {
+    "channel_median": {
+      "overall": {
+        "mape": 3.114673238564973,
+        "rmsle": 1.6430990809191082
+      },
+      "day1": {
+        "mape": 3.2911629236862607,
+        "rmsle": 1.6439350594296693
+      },
+      "day3": {
+        "mape": 2.4370053087399994,
+        "rmsle": 1.608037429633824
+      },
+      "day7": {
+        "mape": 2.1847836310762947,
+        "rmsle": 1.5931560712898507
+      }
+    },
+    "global_median": {
+      "overall": {
+        "mape": 1.670188373256689,
+        "rmsle": 2.1375052225784907
+      },
+      "day1": {
+        "mape": 1.6570583024130774,
+        "rmsle": 2.1090986466352364
+      },
+      "day3": {
+        "mape": 1.5388645235225025,
+        "rmsle": 2.1933923906772184
+      },
+      "day7": {
+        "mape": 1.5307569093975815,
+        "rmsle": 2.2194962001619283
+      }
+    },
+    "metadata_only_ablation": {
+      "overall": {
+        "mape": 3.3089644109666856,
+        "rmsle": 1.5594912993802441
+      },
+      "day1": {
+        "mape": 3.4901633610907083,
+        "rmsle": 1.5662190930936655
+      },
+      "day3": {
+        "mape": 2.9479353921362406,
+        "rmsle": 1.5264830416324786
+      },
+      "day7": {
+        "mape": 2.6931629382803512,
+        "rmsle": 1.5058926645931452
+      }
+    }
+  },
+  "feature_importance": {
+    "vinf_model_top20_gain": [
+      [
+        "category_id_25",
+        117.84320068359375
+      ],
+      [
+        "thumb_pc_0",
+        71.23220825195312
+      ],
+      [
+        "video_count",
+        57.532806396484375
+      ],
+      [
+        "engagement_ratio",
+        36.892852783203125
+      ],
+      [
+        "title_pc_2",
+        36.5853157043457
+      ],
+      [
+        "thumb_pc_2",
+        30.150625228881836
+      ],
+      [
+        "thumb_pc_7",
+        26.059951782226562
+      ],
+      [
+        "title_pc_5",
+        23.35654067993164
+      ],
+      [
+        "thumb_pc_1",
+        22.297588348388672
+      ],
+      [
+        "duration_seconds",
+        21.76795768737793
+      ],
+      [
+        "thumb_pc_6",
+        21.048913955688477
+      ],
+      [
+        "total_views",
+        20.550128936767578
+      ],
+      [
+        "title_pc_1",
+        19.871524810791016
+      ],
+      [
+        "category_id_24",
+        19.726581573486328
+      ],
+      [
+        "thumb_pc_9",
+        19.359792709350586
+      ],
+      [
+        "title_pc_6",
+        18.14286231994629
+      ],
+      [
+        "views_per_subscriber",
+        17.330059051513672
+      ],
+      [
+        "title_pc_3",
+        16.346302032470703
+      ],
+      [
+        "thumb_pc_15",
+        15.073341369628906
+      ],
+      [
+        "thumb_pc_3",
+        15.044638633728027
+      ]
+    ],
+    "tau_model_top20_gain": [
+      [
+        "category_id_25",
+        118.77468872070312
+      ],
+      [
+        "video_count",
+        77.46284484863281
+      ],
+      [
+        "avg_views_per_video",
+        51.29654312133789
+      ],
+      [
+        "size_tier_Small (1K\u201310K)",
+        15.0262451171875
+      ],
+      [
+        "upload_hour",
+        10.443718910217285
+      ],
+      [
+        "title_pc_3",
+        7.432645797729492
+      ],
+      [
+        "thumb_pc_0",
+        7.006279945373535
+      ],
+      [
+        "thumb_pc_3",
+        6.504767417907715
+      ],
+      [
+        "thumb_pc_2",
+        6.382781982421875
+      ],
+      [
+        "title_pc_10",
+        5.584933280944824
+      ],
+      [
+        "duration_seconds",
+        5.278443813323975
+      ],
+      [
+        "title_pc_5",
+        5.207705020904541
+      ],
+      [
+        "thumb_pc_7",
+        5.090184688568115
+      ],
+      [
+        "title_pc_37",
+        4.934573650360107
+      ],
+      [
+        "thumb_pc_30",
+        4.727291584014893
+      ],
+      [
+        "subscriber_count",
+        4.5035505294799805
+      ],
+      [
+        "title_pc_0",
+        4.496270179748535
+      ],
+      [
+        "thumb_pc_15",
+        4.350807189941406
+      ],
+      [
+        "thumb_pc_16",
+        4.309695720672607
+      ],
+      [
+        "thumb_pc_18",
+        4.199473857879639
+      ]
+    ]
+  }
+}

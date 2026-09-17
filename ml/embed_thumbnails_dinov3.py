@@ -39,7 +39,7 @@ import pandas as pd
 import torch
 from PIL import Image
 from tqdm import tqdm
-from transformers import AutoImageProcessor, AutoModel
+from transformers import AutoModel
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FEATURES_CSV = DATA_DIR / "features_simple.csv"
@@ -49,6 +49,9 @@ EMBEDDINGS_NPY = DATA_DIR / "thumbnail_embeddings_dinov3.npy"
 EMBEDDING_IDS_CSV = DATA_DIR / "thumbnail_embedding_ids_dinov3.csv"
 
 MODEL_NAME = "facebook/dinov3-vitb16-pretrain-lvd1689m"
+IMAGE_SIZE = 224
+IMAGE_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGE_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 def load_target_ids(limit: int | None) -> list[str]:
@@ -85,14 +88,33 @@ def load_image(video_id: str) -> Image.Image | None:
         return None
 
 
-def load_model_and_processor(device: str) -> tuple[AutoModel, AutoImageProcessor]:
+def preprocess_images(images: list[Image.Image]) -> dict[str, torch.Tensor]:
+    """Prepare DINOv3 inputs without torchvision.
+
+    The checkpoint uses the standard 224px ImageNet preprocessing. Keeping it
+    local avoids a torchvision binary mismatch in some CPU-only environments.
+    """
+    tensors = []
+    for image in images:
+        width, height = image.size
+        scale = IMAGE_SIZE / min(width, height)
+        resized = image.resize((round(width * scale), round(height * scale)), Image.Resampling.BICUBIC)
+        left = (resized.width - IMAGE_SIZE) // 2
+        top = (resized.height - IMAGE_SIZE) // 2
+        cropped = resized.crop((left, top, left + IMAGE_SIZE, top + IMAGE_SIZE))
+        array = np.asarray(cropped, dtype=np.float32) / 255.0
+        array = (array - IMAGE_MEAN) / IMAGE_STD
+        tensors.append(torch.from_numpy(array.transpose(2, 0, 1)))
+    return {"pixel_values": torch.stack(tensors)}
+
+
+def load_model_and_processor(device: str) -> AutoModel:
     """Loads the gated DINOv3 model, printing a clear message (instead of a
     raw traceback) if the Hub rejects the request for lack of license
     acceptance / a missing HF_TOKEN."""
     print(f"[embed_thumbnails_dinov3] loading {MODEL_NAME} (downloads on first run, cached after)...")
     try:
         model = AutoModel.from_pretrained(MODEL_NAME).to(device).eval()
-        processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
     except Exception as exc:
         message = str(exc).lower()
         auth_markers = ("gated", "401", "403", "access", "authoriz", "authentic", "token")
@@ -108,7 +130,7 @@ def load_model_and_processor(device: str) -> tuple[AutoModel, AutoImageProcessor
             print("=" * 78)
             sys.exit(1)
         raise
-    return model, processor
+    return model
 
 
 def main() -> None:
@@ -133,12 +155,13 @@ def main() -> None:
     to_embed_ids = [vid for vid in target_ids if vid not in existing_id_set]
     already_present = len(target_ids) - len(to_embed_ids)
 
-    model, processor = load_model_and_processor(device)
+    model = load_model_and_processor(device)
     embedding_dim = model.config.hidden_size
 
     n_failed = 0
     logged_token_source = False
     new_embeddings_rows: list[np.ndarray] = []
+    new_embedding_ids: list[str] = []
 
     batches = [
         to_embed_ids[i : i + args.batch_size]
@@ -155,9 +178,9 @@ def main() -> None:
                 images.append(img)
                 valid_indices.append(i)
 
-        batch_embeddings = np.zeros((len(batch_ids), embedding_dim), dtype=np.float32)
+        batch_embeddings = np.empty((len(images), embedding_dim), dtype=np.float32)
         if images:
-            inputs = processor(images=images, return_tensors="pt").to(device)
+            inputs = {name: value.to(device) for name, value in preprocess_images(images).items()}
             with torch.no_grad():
                 outputs = model(**inputs)
             # DINOv3's last_hidden_state is [CLS, register tokens..., patch
@@ -178,9 +201,11 @@ def main() -> None:
                           "using outputs.last_hidden_state[:, 0] (CLS token) for embeddings")
                     logged_token_source = True
                 cls_embeds = outputs.last_hidden_state[:, 0]
-            batch_embeddings[valid_indices] = cls_embeds.cpu().numpy().astype(np.float32)
+            batch_embeddings[:] = cls_embeds.cpu().numpy().astype(np.float32)
+            new_embedding_ids.extend(batch_ids[i] for i in valid_indices)
 
-        new_embeddings_rows.append(batch_embeddings)
+        if len(batch_embeddings):
+            new_embeddings_rows.append(batch_embeddings)
 
     new_embeddings = (
         np.vstack(new_embeddings_rows) if new_embeddings_rows else np.empty((0, embedding_dim), dtype=np.float32)
@@ -190,7 +215,7 @@ def main() -> None:
         all_embeddings = np.vstack([existing_embeddings, new_embeddings])
     else:
         all_embeddings = new_embeddings
-    all_ids = existing_ids + to_embed_ids
+    all_ids = existing_ids + new_embedding_ids
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     np.save(EMBEDDINGS_NPY, all_embeddings)

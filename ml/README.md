@@ -54,6 +54,33 @@ and `.env` file the backend and ETL jobs use — nothing to configure here).
   python ml/plot_fits.py
   ```
 
+- **Thumbnail encoders** — both encoders use the same downloaded images and
+  produce separate artifacts, so their forecasts can be compared on the same
+  channel split. CLIP uses `openai/clip-vit-base-patch32`; DINOv3 uses the
+  gated `facebook/dinov3-vitb16-pretrain-lvd1689m` checkpoint and requires
+  accepting its Hugging Face license and setting `HF_TOKEN`.
+
+  ```powershell
+  python ml/download_thumbnails.py
+  python ml/embed_thumbnails.py --batch-size 32
+  python ml/embed_thumbnails_dinov3.py --batch-size 8
+  python ml/build_features.py --thumbnail-encoder clip
+  python ml/train_model.py --thumbnail-encoder clip
+  python ml/build_features.py --thumbnail-encoder dinov3
+  python ml/train_model.py --thumbnail-encoder dinov3
+  ```
+
+  `train_model.py --thumbnail-encoder dinov3` prints RMSLE for both encoders
+  on the pinned held-out channel split. Prefer the encoder with lower DINOv3
+  or CLIP full-model RMSLE, while checking that it also beats its own
+  metadata-only ablation. Do not compare embedding dimensions directly:
+  both are reduced to 40 PCA features before training.
+
+  The backend selects the same trained artifacts with `THUMBNAIL_ENCODER`.
+  It defaults to `dinov3`; set `THUMBNAIL_ENCODER=clip` to serve the CLIP
+  artifacts instead. Copy or generate the selected suffixed artifacts in
+  `backend/models/` before starting the API.
+
 - **`sweep_first_obs.py`** — standalone diagnostic (touches the DB, unlike
   `fit_curves.py`/`plot_fits.py`) that sweeps the first-observation-lag
   threshold across `common.FIRST_OBS_SWEEP_HOURS` and reports, at each

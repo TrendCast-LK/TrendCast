@@ -7,11 +7,12 @@ channel) request. Mirrors the transformations in:
 
   ml/features_simple.py   - simple numeric features, upload-time conversion
   ml/embed_titles.py      - title embedding model (LaBSE)
-  ml/embed_thumbnails.py  - thumbnail embedding model (CLIP)
-  ml/build_features.py    - PCA reduction, one-hot encoding, target scaling
+    ml/embed_thumbnails.py / ml/embed_thumbnails_dinov3.py - thumbnail encoder
+    ml/build_features.py    - PCA reduction, one-hot encoding, target scaling
   ml/train_model.py       - feature-name sanitization, target reconstruction
 
-Any drift between this file and those scripts silently produces wrong
+    The selected encoder is controlled by THUMBNAIL_ENCODER and defaults to
+    DINOv3. Any drift between this file and those scripts silently produces wrong
 predictions rather than an error, so keep them in sync by hand - ml/ is not
 imported directly (it's a standalone script collection, not a package, and
 isn't guaranteed to ship alongside the backend at deploy time).
@@ -23,6 +24,7 @@ import io
 import json
 import logging
 import math
+import os
 import statistics
 import time
 from dataclasses import dataclass, field
@@ -36,20 +38,29 @@ import requests
 import torch
 from PIL import Image
 from sentence_transformers import SentenceTransformer
-from transformers import CLIPModel, CLIPProcessor
+from transformers import AutoModel, CLIPModel, CLIPProcessor
 
 from db import get_cursor
 
 MODELS_DIR = Path(__file__).resolve().parent / "models"
-VINF_MODEL_PATH = MODELS_DIR / "vinf_model.joblib"
-TAU_MODEL_PATH = MODELS_DIR / "tau_model.joblib"
 TITLE_PCA_PATH = MODELS_DIR / "title_pca.joblib"
-THUMBNAIL_PCA_PATH = MODELS_DIR / "thumbnail_pca.joblib"
 ENCODER_PATH = MODELS_DIR / "categorical_encoder.joblib"
-CHANNEL_MEDIANS_PATH = MODELS_DIR / "channel_medians.json"
+
+THUMBNAIL_ENCODER = os.environ.get("THUMBNAIL_ENCODER", "dinov3").strip().lower()
+if THUMBNAIL_ENCODER not in {"clip", "dinov3"}:
+    raise RuntimeError("THUMBNAIL_ENCODER must be 'clip' or 'dinov3'")
+
+_ENCODER_SUFFIX = f"_{THUMBNAIL_ENCODER}"
+VINF_MODEL_PATH = MODELS_DIR / f"vinf_model{_ENCODER_SUFFIX}.joblib"
+TAU_MODEL_PATH = MODELS_DIR / f"tau_model{_ENCODER_SUFFIX}.joblib"
+THUMBNAIL_PCA_PATH = MODELS_DIR / f"thumbnail_pca{_ENCODER_SUFFIX}.joblib"
+CHANNEL_MEDIANS_PATH = MODELS_DIR / f"channel_medians{_ENCODER_SUFFIX}.json"
 
 TITLE_MODEL_NAME = "sentence-transformers/LaBSE"  # ~1.8GB, downloads on first run
-THUMBNAIL_MODEL_NAME = "openai/clip-vit-base-patch32"  # downloads on first run
+THUMBNAIL_MODEL_NAME = {
+    "clip": "openai/clip-vit-base-patch32",
+    "dinov3": "facebook/dinov3-vitb16-pretrain-lvd1689m",
+}[THUMBNAIL_ENCODER]
 
 THUMBNAIL_DOWNLOAD_TIMEOUT_SECONDS = 10.0
 
@@ -114,8 +125,8 @@ class InferenceState:
     feature_names: list[str] = field(default_factory=list)
 
     title_model: SentenceTransformer | None = None
-    thumbnail_model: CLIPModel | None = None
-    thumbnail_processor: CLIPProcessor | None = None
+    thumbnail_model: AutoModel | CLIPModel | None = None
+    thumbnail_processor: object | CLIPProcessor | None = None
 
 
 _state = InferenceState()
@@ -160,9 +171,16 @@ def load_artifacts() -> None:
         print(f"[inference] loading {TITLE_MODEL_NAME} (~1.8GB, cached after first download)...")
         state.title_model = SentenceTransformer(TITLE_MODEL_NAME, device=state.device)
 
-        print(f"[inference] loading {THUMBNAIL_MODEL_NAME} (downloads on first run, cached after)...")
-        state.thumbnail_model = CLIPModel.from_pretrained(THUMBNAIL_MODEL_NAME).to(state.device).eval()
-        state.thumbnail_processor = CLIPProcessor.from_pretrained(THUMBNAIL_MODEL_NAME)
+        print(
+            f"[inference] loading {THUMBNAIL_MODEL_NAME} ({THUMBNAIL_ENCODER}, "
+            "downloads on first run, cached after)..."
+        )
+        if THUMBNAIL_ENCODER == "dinov3":
+            state.thumbnail_model = AutoModel.from_pretrained(THUMBNAIL_MODEL_NAME).to(state.device).eval()
+            state.thumbnail_processor = None
+        else:
+            state.thumbnail_model = CLIPModel.from_pretrained(THUMBNAIL_MODEL_NAME).to(state.device).eval()
+            state.thumbnail_processor = CLIPProcessor.from_pretrained(THUMBNAIL_MODEL_NAME)
 
         state.ready = True
     except Exception as exc:  # noqa: BLE001 - any failure here must become a 503, not a crash
@@ -209,12 +227,31 @@ def embed_title(state: InferenceState, title: str) -> np.ndarray:
 
 
 def embed_thumbnail(state: InferenceState, image: Image.Image) -> np.ndarray:
-    inputs = state.thumbnail_processor(images=[image], return_tensors="pt").to(state.device)
+    if THUMBNAIL_ENCODER == "dinov3":
+        width, height = image.size
+        scale = 224 / min(width, height)
+        resized = image.resize((round(width * scale), round(height * scale)), Image.Resampling.BICUBIC)
+        left = (resized.width - 224) // 2
+        top = (resized.height - 224) // 2
+        cropped = resized.crop((left, top, left + 224, top + 224))
+        array = np.asarray(cropped, dtype=np.float32) / 255.0
+        array = (array - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array(
+            [0.229, 0.224, 0.225], dtype=np.float32
+        )
+        pixel_values = torch.from_numpy(array.transpose(2, 0, 1)).unsqueeze(0)
+        inputs = {"pixel_values": pixel_values.to(state.device)}
+    else:
+        inputs = state.thumbnail_processor(images=[image], return_tensors="pt").to(state.device)
     with torch.no_grad():
-        features = state.thumbnail_model.get_image_features(**inputs)
-    # Same defensive unwrap as ml/embed_thumbnails.py: newer transformers
-    # versions can return a BaseModelOutputWithPooling instead of a bare tensor.
-    image_embeds = getattr(features, "pooler_output", features)
+        if THUMBNAIL_ENCODER == "dinov3":
+            outputs = state.thumbnail_model(**inputs)
+            image_embeds = getattr(outputs, "pooler_output", None)
+            if image_embeds is None:
+                image_embeds = outputs.last_hidden_state[:, 0]
+        else:
+            features = state.thumbnail_model.get_image_features(**inputs)
+            # Newer transformers versions may wrap CLIP features in an output object.
+            image_embeds = getattr(features, "pooler_output", features)
     raw = image_embeds.cpu().numpy().astype(np.float32)
     return state.thumbnail_pca.transform(raw)[0]
 

@@ -104,6 +104,7 @@ def main() -> None:
 
     n_failed = 0
     new_embeddings_rows: list[np.ndarray] = []
+    new_embedding_ids: list[str] = []
 
     batches = [
         to_embed_ids[i : i + args.batch_size]
@@ -120,7 +121,7 @@ def main() -> None:
                 images.append(img)
                 valid_indices.append(i)
 
-        batch_embeddings = np.zeros((len(batch_ids), embedding_dim), dtype=np.float32)
+        batch_embeddings = np.empty((len(images), embedding_dim), dtype=np.float32)
         if images:
             inputs = processor(images=images, return_tensors="pt").to(device)
             with torch.no_grad():
@@ -128,9 +129,11 @@ def main() -> None:
             # Newer transformers versions return a BaseModelOutputWithPooling
             # (embeddings in .pooler_output) instead of a bare tensor.
             image_embeds = getattr(features, "pooler_output", features)
-            batch_embeddings[valid_indices] = image_embeds.cpu().numpy().astype(np.float32)
+            batch_embeddings[:] = image_embeds.cpu().numpy().astype(np.float32)
+            new_embedding_ids.extend(batch_ids[i] for i in valid_indices)
 
-        new_embeddings_rows.append(batch_embeddings)
+        if len(batch_embeddings):
+            new_embeddings_rows.append(batch_embeddings)
 
     new_embeddings = (
         np.vstack(new_embeddings_rows) if new_embeddings_rows else np.empty((0, embedding_dim), dtype=np.float32)
@@ -140,7 +143,7 @@ def main() -> None:
         all_embeddings = np.vstack([existing_embeddings, new_embeddings])
     else:
         all_embeddings = new_embeddings
-    all_ids = existing_ids + to_embed_ids
+    all_ids = existing_ids + new_embedding_ids
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     np.save(EMBEDDINGS_NPY, all_embeddings)
