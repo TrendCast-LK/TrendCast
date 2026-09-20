@@ -1,12 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
-import { test, expect, mockApi, user, prediction, channel } from "./fixtures.js";
+import { test, expect, mockApi, prediction, channel } from "./fixtures.js";
 
 const screenshotsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../docs/testing/screenshots");
 
 test.describe("public authentication UI", () => {
-  test("sign-in validates credentials and links to sign-up", async ({ page }) => {
+  test("UI-TC-001 sign-in validates credentials and links to sign-up", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "TrendCast" })).toBeVisible();
     await expect(page.getByLabel("Email")).toHaveAttribute("type", "email");
@@ -15,13 +15,13 @@ test.describe("public authentication UI", () => {
     await page.screenshot({ path: path.join(screenshotsDir, "01-sign-in.png"), fullPage: true });
   });
 
-  test("sign-in has no automatically detectable critical accessibility violations", async ({ page }) => {
+  test("UI-TC-002 sign-in has no automatically detectable critical accessibility violations", async ({ page }) => {
     await page.goto("/");
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.filter((violation) => violation.impact === "critical")).toEqual([]);
   });
 
-  test("sign-up exposes required fields and password visibility toggle", async ({ page }) => {
+  test("UI-TC-003 sign-up exposes required fields and password visibility toggle", async ({ page }) => {
     await page.goto("/sign-up");
     await expect(page.getByRole("heading", { name: "Create an account" })).toBeVisible();
     await expect(page.getByLabel("Full Name")).toHaveAttribute("required", "");
@@ -34,13 +34,13 @@ test.describe("public authentication UI", () => {
 });
 
 test.describe("protected route and dashboard", () => {
-  test("unauthenticated users are redirected to sign-in", async ({ page }) => {
+  test("UI-TC-004 unauthenticated users are redirected to sign-in", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
   });
 
-  test("dashboard renders empty state and navigation shell", async ({ authenticatedPage: page }) => {
+  test("UI-TC-005 dashboard renders empty state and navigation shell", async ({ authenticatedPage: page }) => {
     await page.goto("/dashboard");
     await expect(page.getByText("Welcome back, Nimal")).toBeVisible();
     await expect(page.getByText(/No predictions yet/)).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("protected route and dashboard", () => {
     await page.screenshot({ path: path.join(screenshotsDir, "02-dashboard-empty.png"), fullPage: true });
   });
 
-  test("dashboard renders completed and draft prediction cards", async ({ authenticatedPage: page }) => {
+  test("UI-TC-006 dashboard renders completed and draft prediction cards", async ({ authenticatedPage: page }) => {
     await mockApi(page, {
       predictions: [
         { id: 42, title: prediction.title, category: prediction.category, status: "complete", predicted_views: 185000 },
@@ -68,7 +68,7 @@ test.describe("protected route and dashboard", () => {
 });
 
 test.describe("prediction form and results", () => {
-  test("new prediction validates title, manages tags, and submits a form", async ({ authenticatedPage: page }) => {
+  test("UI-TC-007 new prediction validates title, manages tags, and submits a form", async ({ authenticatedPage: page }) => {
     await page.goto("/new-prediction");
     await page.getByRole("button", { name: "Initialize Prediction" }).click();
     await expect(page.getByText("Give the prediction a title first.")).toBeVisible();
@@ -86,7 +86,7 @@ test.describe("prediction form and results", () => {
     await expect(page).toHaveURL(/\/prediction-result\/42$/);
   });
 
-  test("prediction result renders forecast canvas and submit-another navigation", async ({ authenticatedPage: page }) => {
+  test("UI-TC-008 prediction result renders forecast canvas and submit-another navigation", async ({ authenticatedPage: page }) => {
     await page.goto("/prediction-result/42");
     await expect(page.getByRole("heading", { name: "Prediction Results" })).toBeVisible();
     await expect(page.getByText("7-Day View Forecast")).toBeVisible();
@@ -97,7 +97,7 @@ test.describe("prediction form and results", () => {
 });
 
 test.describe("trends, settings, channel, and shared controls", () => {
-  test("trends renders summary cards, chart, and category breakdown", async ({ authenticatedPage: page }) => {
+  test("UI-TC-009 trends renders summary cards, chart, and category breakdown", async ({ authenticatedPage: page }) => {
     await page.goto("/trends");
     await expect(page.getByRole("heading", { name: "Trends" })).toBeVisible();
     await expect(page.getByText("Total Predictions")).toBeVisible();
@@ -106,7 +106,7 @@ test.describe("trends, settings, channel, and shared controls", () => {
     await expect(page.getByText(/Travel & Events/).first()).toBeVisible();
   });
 
-  test("settings saves profile, validates password confirmation, and toggles theme", async ({ authenticatedPage: page }) => {
+  test("UI-TC-010 settings saves profile, validates password confirmation, and toggles theme", async ({ authenticatedPage: page }) => {
     await page.goto("/settings");
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await page.getByRole("button", { name: /dark_mode Dark/ }).click();
@@ -126,7 +126,7 @@ test.describe("trends, settings, channel, and shared controls", () => {
     await expect(page.getByText("New passwords don't match.")).toBeVisible();
   });
 
-  test("channel displays data and supports refresh", async ({ authenticatedPage: page }) => {
+  test("UI-TC-011 channel displays data and supports refresh", async ({ authenticatedPage: page }) => {
     await page.goto("/channel");
     await expect(page.getByRole("heading", { name: "Channel Data" })).toBeVisible();
     await expect(page.getByRole("heading", { name: channel.title })).toBeVisible();
@@ -136,7 +136,7 @@ test.describe("trends, settings, channel, and shared controls", () => {
     await expect(page.getByRole("button", { name: "Refresh" })).toBeEnabled();
   });
 
-  test("notifications show unread items and mark-all-read", async ({ authenticatedPage: page }) => {
+  test("UI-TC-012 notifications show unread items and mark-all-read", async ({ authenticatedPage: page }) => {
     await mockApi(page, {
       notifications: [{ id: 1, type: "welcome", title: "Welcome", message: "Welcome to TrendCast", read: false, created_at: "2026-09-20T10:00:00Z" }],
     });

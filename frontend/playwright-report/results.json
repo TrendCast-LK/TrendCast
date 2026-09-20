@@ -4,6 +4,8 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\DSEP\\TrendCast\\frontend\\node_modules\\@playwright\\test\\cli.js",
       "test",
+      "tests/ui/responsive.spec.js",
+      "--project=chromium",
       "--workers=1"
     ],
     "configFile": "D:\\DSEP\\TrendCast\\frontend\\playwright.config.js",
@@ -90,161 +92,445 @@
   },
   "suites": [
     {
-      "title": "live.spec.js",
-      "file": "live.spec.js",
+      "title": "responsive.spec.js",
+      "file": "responsive.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "@live backend availability",
-          "file": "live.spec.js",
-          "line": 3,
+          "title": "E. Responsive layout",
+          "file": "responsive.spec.js",
+          "line": 9,
           "column": 6,
           "specs": [
             {
-              "title": "frontend can be opened while the real backend health endpoint is ready",
-              "ok": true,
-              "tags": [
-                "live"
-              ],
+              "title": "UI-TC-375-dashboard 375x667 dashboard",
+              "ok": false,
+              "tags": [],
               "tests": [
                 {
                   "timeout": 30000,
-                  "annotations": [
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
                     {
-                      "type": "skip",
-                      "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
-                      "location": {
-                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
-                        "line": 16,
-                        "column": 10
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4423,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m305\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m305\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m305\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:32.261Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-b8e6f-dashboard-375x667-dashboard-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-b8e6f-dashboard-375x667-dashboard-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
                       }
                     }
                   ],
-                  "expectedStatus": "skipped",
+                  "status": "unexpected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-5d64e88971dc39292362",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-375-new-prediction 375x667 new-prediction",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 176,
+                      "status": "passed",
+                      "duration": 1524,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:38.528Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
-                          "location": {
-                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
-                            "line": 16,
-                            "column": 10
-                          }
-                        }
-                      ],
+                      "startTime": "2026-09-20T12:16:37.710Z",
+                      "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\live--live-backend-availab-7eaee-nd-health-endpoint-is-ready-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-0be0c-tion-375x667-new-prediction-chromium\\test-finished-1.png"
                         }
                       ]
                     }
                   ],
-                  "status": "skipped"
+                  "status": "expected"
                 }
               ],
-              "id": "ed0cb703495a228a0509-828f23bb4f5db69ae590",
-              "file": "live.spec.js",
-              "line": 15,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-7e89c69953589dc04cf9",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "frontend can be opened while the real backend health endpoint is ready",
+              "title": "UI-TC-375-prediction-result-42 375x667 prediction-result/42",
               "ok": true,
-              "tags": [
-                "live"
-              ],
+              "tags": [],
               "tests": [
                 {
                   "timeout": 30000,
-                  "annotations": [
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
                     {
-                      "type": "skip",
-                      "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
-                      "location": {
-                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
-                        "line": 16,
-                        "column": 10
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:39.435Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-86f4e-75x667-prediction-result-42-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-93736c2f946c7d03356f",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-375-trends 375x667 trends",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1369,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m75\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m75\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m75\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:40.727Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-80243-C-375-trends-375x667-trends-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-80243-C-375-trends-375x667-trends-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
                       }
                     }
                   ],
-                  "expectedStatus": "skipped",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
+                  "status": "unexpected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-b740230f6689dd7fcf3b",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-375-settings 375x667 settings",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 1391,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:14:54.136Z",
-                      "annotations": [
+                      "status": "failed",
+                      "duration": 1359,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m201\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m201\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
                         {
-                          "type": "skip",
-                          "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
                           "location": {
-                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
-                            "line": 16,
-                            "column": 10
-                          }
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m201\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
                         }
                       ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:42.823Z",
+                      "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\live--live-backend-availab-7eaee-nd-health-endpoint-is-ready-firefox\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-73baf-5-settings-375x667-settings-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-73baf-5-settings-375x667-settings-chromium\\error-context.md"
                         }
-                      ]
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
+                      }
                     }
                   ],
-                  "status": "skipped"
+                  "status": "unexpected"
                 }
               ],
-              "id": "ed0cb703495a228a0509-02fdb1556ce63c01481b",
-              "file": "live.spec.js",
-              "line": 15,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "ui.spec.js",
-      "file": "ui.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "public authentication UI",
-          "file": "ui.spec.js",
-          "line": 8,
-          "column": 6,
-          "specs": [
+              "id": "68833bfb7a01a66a4f98-097d76357feea23bce83",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
             {
-              "title": "sign-in validates credentials and links to sign-up",
+              "title": "UI-TC-375-channel 375x667 channel",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1371,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m170\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m170\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m170\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:45.119Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-6b359-375-channel-375x667-channel-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-6b359-375-channel-375x667-channel-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-5d76d430dfdcbd237645",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-768-dashboard 768x1024 dashboard",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1463,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m3\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m3\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m3\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:47.386Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-53089-ashboard-768x1024-dashboard-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-53089-ashboard-768x1024-dashboard-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-f7e6ac5b3352c1165249",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-768-new-prediction 768x1024 new-prediction",
               "ok": true,
               "tags": [],
               "tests": [
@@ -256,21 +542,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 5,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1261,
+                      "duration": 1615,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:38.990Z",
+                      "startTime": "2026-09-20T12:16:49.730Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-e2cae-ntials-and-links-to-sign-up-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-f30a4-ion-768x1024-new-prediction-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -278,13 +564,82 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-6c5d3ac5986d71250cc2",
-              "file": "ui.spec.js",
-              "line": 9,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-fdcef1b56c65237ad801",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "sign-in has no automatically detectable critical accessibility violations",
+              "title": "UI-TC-768-prediction-result-42 768x1024 prediction-result/42",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1231,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m66\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m66\u001b[39m\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26",
+                        "location": {
+                          "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                          "column": 26,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m path\u001b[33m.\u001b[39mjoin(screenshotsDir\u001b[33m,\u001b[39m \u001b[32m`${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`\u001b[39m)\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m         \u001b[36mconst\u001b[39m overflow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m document\u001b[33m.\u001b[39mdocumentElement\u001b[33m.\u001b[39mscrollWidth \u001b[33m-\u001b[39m window\u001b[33m.\u001b[39minnerWidth)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m         expect(overflow)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m       })\u001b[33m;\u001b[39m\n \u001b[90m 20 |\u001b[39m     }\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                            "column": 26,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m0\u001b[39m\nReceived:    \u001b[31m66\u001b[39m\n\n  16 |         await page.screenshot({ path: path.join(screenshotsDir, `${route.replaceAll(\"/\", \"-\")}-${width}x${height}.png`), fullPage: true });\n  17 |         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);\n> 18 |         expect(overflow).toBeLessThanOrEqual(0);\n     |                          ^\n  19 |       });\n  20 |     }\n  21 |   }\n    at D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js:18:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T12:16:51.511Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-37cea-8x1024-prediction-result-42-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-37cea-8x1024-prediction-result-42-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\responsive.spec.js",
+                        "column": 26,
+                        "line": 18
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "68833bfb7a01a66a4f98-bc178c2bfae12143a00f",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "UI-TC-768-trends 768x1024 trends",
               "ok": true,
               "tags": [],
               "tests": [
@@ -296,21 +651,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1386,
+                      "duration": 1213,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:40.268Z",
+                      "startTime": "2026-09-20T12:16:53.298Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-3a27f-al-accessibility-violations-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-96e46--768-trends-768x1024-trends-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -318,13 +673,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-a5712fac4f6cbd80c53f",
-              "file": "ui.spec.js",
-              "line": 18,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-6fc5657494d6b7abd62a",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "sign-up exposes required fields and password visibility toggle",
+              "title": "UI-TC-768-settings 768x1024 settings",
               "ok": true,
               "tags": [],
               "tests": [
@@ -336,21 +691,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1172,
+                      "duration": 1243,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:41.676Z",
+                      "startTime": "2026-09-20T12:16:54.660Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-0e081--password-visibility-toggle-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-b1eed--settings-768x1024-settings-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -358,141 +713,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-b3e3e7ef17090737dc5d",
-              "file": "ui.spec.js",
-              "line": 24,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-a1681a3dc38727a0dd2a",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "sign-in validates credentials and links to sign-up",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1894,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:14:56.318Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-e2cae-ntials-and-links-to-sign-up-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-8d3bbfe88657659cca83",
-              "file": "ui.spec.js",
-              "line": 9,
-              "column": 3
-            },
-            {
-              "title": "sign-in has no automatically detectable critical accessibility violations",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2630,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:14:58.229Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-3a27f-al-accessibility-violations-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-44fa48dd6511345f325d",
-              "file": "ui.spec.js",
-              "line": 18,
-              "column": 3
-            },
-            {
-              "title": "sign-up exposes required fields and password visibility toggle",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1648,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:00.879Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-0e081--password-visibility-toggle-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-174762c0c2729dcca935",
-              "file": "ui.spec.js",
-              "line": 24,
-              "column": 3
-            }
-          ]
-        },
-        {
-          "title": "protected route and dashboard",
-          "file": "ui.spec.js",
-          "line": 36,
-          "column": 6,
-          "specs": [
-            {
-              "title": "unauthenticated users are redirected to sign-in",
+              "title": "UI-TC-768-channel 768x1024 channel",
               "ok": true,
               "tags": [],
               "tests": [
@@ -504,21 +731,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1183,
+                      "duration": 1325,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:42.867Z",
+                      "startTime": "2026-09-20T12:16:55.919Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-60903-s-are-redirected-to-sign-in-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-b3f35-68-channel-768x1024-channel-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -526,13 +753,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-207a3c3fa81b983dbccc",
-              "file": "ui.spec.js",
-              "line": 37,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-b87a38f23c602e95fdbc",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "dashboard renders empty state and navigation shell",
+              "title": "UI-TC-1366-dashboard 1366x768 dashboard",
               "ok": true,
               "tags": [],
               "tests": [
@@ -544,21 +771,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1374,
+                      "duration": 1437,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:44.073Z",
+                      "startTime": "2026-09-20T12:16:57.264Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-ad847--state-and-navigation-shell-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-a2651-ashboard-1366x768-dashboard-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -566,13 +793,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-e5fa666bb72a560f79c0",
-              "file": "ui.spec.js",
-              "line": 43,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-7b6681f55648d1bc0119",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "dashboard renders completed and draft prediction cards",
+              "title": "UI-TC-1366-new-prediction 1366x768 new-prediction",
               "ok": true,
               "tags": [],
               "tests": [
@@ -584,21 +811,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1082,
+                      "duration": 1594,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:45.468Z",
+                      "startTime": "2026-09-20T12:16:58.722Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-187b4--and-draft-prediction-cards-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-77c74-ion-1366x768-new-prediction-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -606,141 +833,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-f4ece65f900e2f6f5cf9",
-              "file": "ui.spec.js",
-              "line": 55,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-4dac574a3b4bfc86d720",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "unauthenticated users are redirected to sign-in",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1714,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:02.549Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-60903-s-are-redirected-to-sign-in-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-86459b809a0bdc18d649",
-              "file": "ui.spec.js",
-              "line": 37,
-              "column": 3
-            },
-            {
-              "title": "dashboard renders empty state and navigation shell",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1827,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:04.279Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-ad847--state-and-navigation-shell-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-56f1252e4c7abf467d37",
-              "file": "ui.spec.js",
-              "line": 43,
-              "column": 3
-            },
-            {
-              "title": "dashboard renders completed and draft prediction cards",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1748,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:06.123Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-187b4--and-draft-prediction-cards-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-c1a07267a8c5fb31fbe9",
-              "file": "ui.spec.js",
-              "line": 55,
-              "column": 3
-            }
-          ]
-        },
-        {
-          "title": "prediction form and results",
-          "file": "ui.spec.js",
-          "line": 70,
-          "column": 6,
-          "specs": [
-            {
-              "title": "new prediction validates title, manages tags, and submits a form",
+              "title": "UI-TC-1366-prediction-result-42 1366x768 prediction-result/42",
               "ok": true,
               "tags": [],
               "tests": [
@@ -752,21 +851,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1162,
+                      "duration": 1400,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:46.578Z",
+                      "startTime": "2026-09-20T12:17:00.349Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-808ea-ges-tags-and-submits-a-form-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-428d2-66x768-prediction-result-42-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -774,13 +873,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-811f96cecab41a79bf2e",
-              "file": "ui.spec.js",
-              "line": 71,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-17ea1d2b159aaff6f633",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "prediction result renders forecast canvas and submit-another navigation",
+              "title": "UI-TC-1366-trends 1366x768 trends",
               "ok": true,
               "tags": [],
               "tests": [
@@ -792,21 +891,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1131,
+                      "duration": 1417,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:47.763Z",
+                      "startTime": "2026-09-20T12:17:01.765Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-4c4a4-d-submit-another-navigation-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-dca6f-1366-trends-1366x768-trends-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -814,101 +913,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-086bb625cf5290ea9330",
-              "file": "ui.spec.js",
-              "line": 89,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-c884cb103ae09b15617b",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "new prediction validates title, manages tags, and submits a form",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2682,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:07.898Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-808ea-ges-tags-and-submits-a-form-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-32aa450e0ab04668e529",
-              "file": "ui.spec.js",
-              "line": 71,
-              "column": 3
-            },
-            {
-              "title": "prediction result renders forecast canvas and submit-another navigation",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2168,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-20T11:15:10.601Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-4c4a4-d-submit-another-navigation-firefox\\test-finished-1.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6cacfa4b79c1be8f210f-3e324ffd8f6076beb0e1",
-              "file": "ui.spec.js",
-              "line": 89,
-              "column": 3
-            }
-          ]
-        },
-        {
-          "title": "trends, settings, channel, and shared controls",
-          "file": "ui.spec.js",
-          "line": 99,
-          "column": 6,
-          "specs": [
-            {
-              "title": "trends renders summary cards, chart, and category breakdown",
+              "title": "UI-TC-1366-settings 1366x768 settings",
               "ok": true,
               "tags": [],
               "tests": [
@@ -920,21 +931,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1083,
+                      "duration": 1509,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:48.912Z",
+                      "startTime": "2026-09-20T12:17:03.215Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-9e1c5-hart-and-category-breakdown-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-53b1d--settings-1366x768-settings-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -942,13 +953,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-b7142bf936d8fbc1c3fb",
-              "file": "ui.spec.js",
-              "line": 100,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-b5d8e2e579979d8931e9",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "settings saves profile, validates password confirmation, and toggles theme",
+              "title": "UI-TC-1366-channel 1366x768 channel",
               "ok": true,
               "tags": [],
               "tests": [
@@ -960,21 +971,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1174,
+                      "duration": 1586,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:50.012Z",
+                      "startTime": "2026-09-20T12:17:04.748Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-13963-firmation-and-toggles-theme-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-77c90-66-channel-1366x768-channel-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -982,13 +993,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-b96528be70989f2fe9ff",
-              "file": "ui.spec.js",
-              "line": 109,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-fbd50bec4641a3b91566",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "channel displays data and supports refresh",
+              "title": "UI-TC-1920-dashboard 1920x1080 dashboard",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1000,21 +1011,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1181,
+                      "duration": 1596,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:51.201Z",
+                      "startTime": "2026-09-20T12:17:06.355Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-4373a-s-data-and-supports-refresh-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-e46fb-shboard-1920x1080-dashboard-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1022,13 +1033,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-7c698e09693e9cb0a2ff",
-              "file": "ui.spec.js",
-              "line": 129,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-4b90ad4083269ad17ebe",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "notifications show unread items and mark-all-read",
+              "title": "UI-TC-1920-new-prediction 1920x1080 new-prediction",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1040,21 +1051,21 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1136,
+                      "duration": 1990,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:14:52.401Z",
+                      "startTime": "2026-09-20T12:17:07.984Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-1da28-ead-items-and-mark-all-read-chromium\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-080d3-on-1920x1080-new-prediction-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1062,13 +1073,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-93b93de24c92a80752b6",
-              "file": "ui.spec.js",
-              "line": 139,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-d174f5ac8e255d0e4a8c",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "trends renders summary cards, chart, and category breakdown",
+              "title": "UI-TC-1920-prediction-result-42 1920x1080 prediction-result/42",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1076,25 +1087,25 @@
                   "timeout": 30000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3329,
+                      "duration": 1824,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:15:12.789Z",
+                      "startTime": "2026-09-20T12:17:09.994Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-9e1c5-hart-and-category-breakdown-firefox\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-dbee3-0x1080-prediction-result-42-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1102,13 +1113,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-da9de6a34b066ffe70d5",
-              "file": "ui.spec.js",
-              "line": 100,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-ed24c77e647e5938c86a",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "settings saves profile, validates password confirmation, and toggles theme",
+              "title": "UI-TC-1920-trends 1920x1080 trends",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1116,25 +1127,25 @@
                   "timeout": 30000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2543,
+                      "duration": 1921,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:15:16.141Z",
+                      "startTime": "2026-09-20T12:17:11.840Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-13963-firmation-and-toggles-theme-firefox\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-2601f-920-trends-1920x1080-trends-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1142,13 +1153,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-7db071eec38433fea058",
-              "file": "ui.spec.js",
-              "line": 109,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-c027967946d218549cf8",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "channel displays data and supports refresh",
+              "title": "UI-TC-1920-settings 1920x1080 settings",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1156,25 +1167,25 @@
                   "timeout": 30000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1665,
+                      "duration": 1667,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:15:18.710Z",
+                      "startTime": "2026-09-20T12:17:13.787Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-4373a-s-data-and-supports-refresh-firefox\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-43466-settings-1920x1080-settings-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1182,13 +1193,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-2ba05cc9fbd1cc5ee2af",
-              "file": "ui.spec.js",
-              "line": 129,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-f8000fbb8f6a043423c7",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             },
             {
-              "title": "notifications show unread items and mark-all-read",
+              "title": "UI-TC-1920-channel 1920x1080 channel",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1196,25 +1207,25 @@
                   "timeout": 30000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1944,
+                      "duration": 1735,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-20T11:15:20.394Z",
+                      "startTime": "2026-09-20T12:17:15.475Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-1da28-ead-items-and-mark-all-read-firefox\\test-finished-1.png"
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\responsive-E-Responsive-la-ed787-0-channel-1920x1080-channel-chromium\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1222,10 +1233,10 @@
                   "status": "expected"
                 }
               ],
-              "id": "6cacfa4b79c1be8f210f-94129866c6ab73de37fb",
-              "file": "ui.spec.js",
-              "line": 139,
-              "column": 3
+              "id": "68833bfb7a01a66a4f98-cd983eeef0126de36bf5",
+              "file": "responsive.spec.js",
+              "line": 12,
+              "column": 7
             }
           ]
         }
@@ -1234,11 +1245,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-20T11:14:36.583Z",
-    "duration": 46727.495,
-    "expected": 24,
-    "skipped": 2,
-    "unexpected": 0,
+    "startTime": "2026-09-20T12:16:30.517Z",
+    "duration": 47204.627,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 6,
     "flaky": 0
   }
 }

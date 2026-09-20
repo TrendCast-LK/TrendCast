@@ -1,0 +1,1254 @@
+[
+  {
+    "route": "/",
+    "loadTimeMs": 1174,
+    "requestCount": 42,
+    "responseCount": 42,
+    "pageWeightBytes": 8027765,
+    "resources": [
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 300
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 300
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 9822
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 130387
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 2819983
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 35013
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 1417784
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 6719
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 1503674
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 49130
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFWNPoTcZY4.woff2",
+        "transferSize": 29604
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0I5nvwU.woff2",
+        "transferSize": 48832
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFWNPoTcZY4.woff2",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0I5nvwU.woff2",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/materialsymbolsoutlined/v373/kJEPBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzBwG-RpA6RzaxHMPdY40KH8nGzv3fzfVJO1Q.woff2",
+        "transferSize": 1132352
+      }
+    ]
+  },
+  {
+    "route": "/sign-up",
+    "loadTimeMs": 811,
+    "requestCount": 37,
+    "responseCount": 11,
+    "pageWeightBytes": 844165,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      },
+      {
+        "name": "https://lh3.googleusercontent.com/aida-public/AB6AXuC93pR7xSH84OBkKuaMej0NPraC5dXbGSPMXo4WCjlt-QouBMFhePPDzADvKN4BYFACnFugq6RBuNg0c_qVotor7P2qS2F2qqaHP2B-Zr03QalCbqRs9d4Hm-_ABWSSaXnWgCz3f3PN9at_5ty0Iw2w8cZRdlVUCAH8crve-98pZ51EmjhEJVzGSkQdWdcTOCMS8qX75vKG6VSXZFD7dTtLLTcJAIvWfR_uRDe-n-h80m0E94vgPAs",
+        "transferSize": 300
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFWNPoTcZY4.woff2",
+        "transferSize": 0
+      }
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "loadTimeMs": 601,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  },
+  {
+    "route": "/new-prediction",
+    "loadTimeMs": 555,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  },
+  {
+    "route": "/prediction-result/42",
+    "loadTimeMs": 534,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  },
+  {
+    "route": "/trends",
+    "loadTimeMs": 601,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  },
+  {
+    "route": "/settings",
+    "loadTimeMs": 585,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  },
+  {
+    "route": "/channel",
+    "loadTimeMs": 561,
+    "requestCount": 36,
+    "responseCount": 10,
+    "pageWeightBytes": 843865,
+    "resources": [
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800;900&display=swap",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/@vite/client",
+        "transferSize": 204766
+      },
+      {
+        "name": "http://localhost:5173/src/main.jsx",
+        "transferSize": 3212
+      },
+      {
+        "name": "http://localhost:5173/@react-refresh",
+        "transferSize": 112194
+      },
+      {
+        "name": "http://localhost:5173/favicon.svg",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/index.css",
+        "transferSize": 63954
+      },
+      {
+        "name": "http://localhost:5173/src/App.jsx",
+        "transferSize": 10235
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/context/AuthContext.jsx",
+        "transferSize": 12186
+      },
+      {
+        "name": "http://localhost:5173/src/context/ThemeContext.jsx",
+        "transferSize": 6071
+      },
+      {
+        "name": "http://localhost:5173/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 3778
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/rolldown-runtime-BPOCksWG.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignIn.jsx",
+        "transferSize": 27134
+      },
+      {
+        "name": "http://localhost:5173/src/pages/SignUp.jsx",
+        "transferSize": 57207
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Dashboard.jsx",
+        "transferSize": 34242
+      },
+      {
+        "name": "http://localhost:5173/src/pages/NewPrediction.jsx",
+        "transferSize": 56430
+      },
+      {
+        "name": "http://localhost:5173/src/pages/PredictionResult.jsx",
+        "transferSize": 39055
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Trends.jsx",
+        "transferSize": 34781
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Settings.jsx",
+        "transferSize": 42219
+      },
+      {
+        "name": "http://localhost:5173/src/pages/Channel.jsx",
+        "transferSize": 33128
+      },
+      {
+        "name": "http://localhost:5173/src/components/RequireAuth.jsx",
+        "transferSize": 4353
+      },
+      {
+        "name": "http://localhost:5173/src/lib/api.js",
+        "transferSize": 16130
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/react-dom.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/ThemeToggle.jsx",
+        "transferSize": 4528
+      },
+      {
+        "name": "http://localhost:5173/src/components/Sidebar.jsx",
+        "transferSize": 14055
+      },
+      {
+        "name": "http://localhost:5173/src/components/Topbar.jsx",
+        "transferSize": 9542
+      },
+      {
+        "name": "http://localhost:5173/src/lib/format.js",
+        "transferSize": 4397
+      },
+      {
+        "name": "http://localhost:5173/src/components/ResultsTopbar.jsx",
+        "transferSize": 12232
+      },
+      {
+        "name": "http://localhost:5173/src/lib/chartTheme.js",
+        "transferSize": 2705
+      },
+      {
+        "name": "http://localhost:5173/node_modules/.vite/deps/chart__js_auto.js?v=b5ca9a84",
+        "transferSize": 0
+      },
+      {
+        "name": "http://localhost:5173/src/components/NotificationsMenu.jsx",
+        "transferSize": 22273
+      },
+      {
+        "name": "http://localhost:5173/src/components/HelpMenu.jsx",
+        "transferSize": 13058
+      }
+    ]
+  }
+]
