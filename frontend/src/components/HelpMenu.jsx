@@ -61,7 +61,7 @@ export default function HelpMenu() {
 
           <div className="px-4 py-3 border-t border-outline-variant/30">
             <a
-              href="mailto:support@viewcast.example"
+              href="mailto:support@trendcast.example"
               className="font-label-md text-label-md text-primary hover:text-secondary transition-colors flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">mail</span>

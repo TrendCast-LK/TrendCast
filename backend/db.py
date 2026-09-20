@@ -16,10 +16,17 @@ from config import SUPABASE_DB_URL
 pool = SimpleConnectionPool(minconn=1, maxconn=10, dsn=SUPABASE_DB_URL)
 
 
+def _init_connection(conn):
+    """Ensure connection is in write mode and autocommit is off."""
+    conn.set_session(readonly=False, autocommit=False)
+    return conn
+
+
 @contextmanager
 def get_connection():
     conn = pool.getconn()
     try:
+        _init_connection(conn)
         yield conn
     finally:
         pool.putconn(conn)

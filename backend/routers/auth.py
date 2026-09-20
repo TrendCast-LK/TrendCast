@@ -67,7 +67,7 @@ def signup(request: SignupRequest):
     create_notification(
         user_id,
         "welcome",
-        "Welcome to ViewCast",
+        "Welcome to TrendCast",
         "Your account is ready — try running your first prediction.",
     )
 

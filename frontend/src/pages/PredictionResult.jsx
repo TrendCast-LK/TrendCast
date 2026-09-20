@@ -242,9 +242,6 @@ export default function PredictionResult() {
               <button className="px-4 py-1.5 rounded-md bg-surface text-on-surface font-label-sm shadow-sm">
                 Views
               </button>
-              <button className="px-4 py-1.5 rounded-md text-on-surface-variant font-label-sm hover:text-on-surface transition-colors">
-                Engagement
-              </button>
             </div>
           </div>
           <div className="w-full h-[400px] relative">

@@ -66,7 +66,7 @@ export default function SignIn() {
         <div className="glass-card rounded-xl p-8 md:p-12 w-full transition-all duration-300 hover:shadow-[0px_20px_40px_rgba(0,0,0,0.08)]">
           <div className="text-center mb-8">
             <h1 className="font-headline-lg text-headline-lg text-on-surface mb-2 tracking-tight">
-              ViewCast
+              TrendCast
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
               Predictive Brilliance for Creators

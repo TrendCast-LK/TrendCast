@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-const THEME_KEY = "viewcast_theme";
+const THEME_KEY = "trendcast_theme";
 const ThemeContext = createContext(null);
 
 function getInitialTheme() {

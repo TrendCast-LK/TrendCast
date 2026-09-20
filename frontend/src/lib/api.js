@@ -1,5 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const TOKEN_KEY = "viewcast_token";
+const TOKEN_KEY = "trendcast_token";
 
 export class ApiError extends Error {
   constructor(message, status) {

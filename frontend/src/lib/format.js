@@ -7,8 +7,9 @@ export function formatCompact(value) {
 
 export function formatSignedPercent(value) {
   if (value === null || value === undefined) return "—";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value}%`;
+  const rounded = Math.round(value * 100) / 100;
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded}%`;
 }
 
 const RELATIVE_UNITS = [
