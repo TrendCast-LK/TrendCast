@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Archive & Switch Channels Migration
--- File: postgres/init/02_archive_and_switch_channels.sql
+-- File: backend/schema/init/02_archive_and_switch_channels.sql
 -- Purpose: Creates archive tables to preserve historical data before
 --          switching the pipeline to a new channel seed set.
 -- =============================================================================
@@ -92,3 +92,11 @@ CREATE INDEX IF NOT EXISTS idx_view_ts_archive_scraped
 
 COMMENT ON TABLE view_timeseries_archive IS
     'Snapshot archive of view_timeseries metric rows preserved before a channel-set rotation.';
+
+-- Row-level security. Supabase exposes every public-schema table through its REST
+-- API to the anon/authenticated keys unless RLS is on; with RLS on and no
+-- policies those roles see nothing. The backend and scripts connect directly as
+-- the database owner (bypasses RLS), so they are unaffected.
+ALTER TABLE channel_stats_archive   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE videos_archive          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE view_timeseries_archive ENABLE ROW LEVEL SECURITY;

@@ -50,8 +50,9 @@ services:
     volumes:
       # Persistent data volume
       - ./postgres_data:/var/lib/postgresql/data
-      # Initialization SQL scripts (optional — runs once on first boot)
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      # Initialization SQL scripts (optional — runs once on first boot).
+      # The schema now lives with the backend, which owns the database.
+      - ../backend/schema/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
