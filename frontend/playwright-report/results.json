@@ -1,0 +1,1244 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\DSEP\\TrendCast\\frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--workers=1"
+    ],
+    "configFile": "D:\\DSEP\\TrendCast\\frontend\\playwright.config.js",
+    "rootDir": "D:/DSEP/TrendCast/frontend/tests/ui",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/DSEP/TrendCast/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/DSEP/TrendCast/frontend/tests/ui",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "D:/DSEP/TrendCast/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "D:/DSEP/TrendCast/frontend/tests/ui",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev -- --host localhost",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [
+    {
+      "title": "live.spec.js",
+      "file": "live.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "@live backend availability",
+          "file": "live.spec.js",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "frontend can be opened while the real backend health endpoint is ready",
+              "ok": true,
+              "tags": [
+                "live"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
+                      "location": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
+                        "line": 16,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 176,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:38.528Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
+                            "line": 16,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\live--live-backend-availab-7eaee-nd-health-endpoint-is-ready-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed0cb703495a228a0509-828f23bb4f5db69ae590",
+              "file": "live.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "frontend can be opened while the real backend health endpoint is ready",
+              "ok": true,
+              "tags": [
+                "live"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
+                      "location": {
+                        "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
+                        "line": 16,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 1391,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:54.136Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Live backend http://127.0.0.1:8000/forecast/health is not ready",
+                          "location": {
+                            "file": "D:\\DSEP\\TrendCast\\frontend\\tests\\ui\\live.spec.js",
+                            "line": 16,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\live--live-backend-availab-7eaee-nd-health-endpoint-is-ready-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed0cb703495a228a0509-02fdb1556ce63c01481b",
+              "file": "live.spec.js",
+              "line": 15,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "ui.spec.js",
+      "file": "ui.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "public authentication UI",
+          "file": "ui.spec.js",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "sign-in validates credentials and links to sign-up",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1261,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:38.990Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-e2cae-ntials-and-links-to-sign-up-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-6c5d3ac5986d71250cc2",
+              "file": "ui.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "sign-in has no automatically detectable critical accessibility violations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1386,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:40.268Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-3a27f-al-accessibility-violations-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-a5712fac4f6cbd80c53f",
+              "file": "ui.spec.js",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "sign-up exposes required fields and password visibility toggle",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1172,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:41.676Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-0e081--password-visibility-toggle-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-b3e3e7ef17090737dc5d",
+              "file": "ui.spec.js",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "sign-in validates credentials and links to sign-up",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1894,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:56.318Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-e2cae-ntials-and-links-to-sign-up-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-8d3bbfe88657659cca83",
+              "file": "ui.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "sign-in has no automatically detectable critical accessibility violations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2630,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:58.229Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-3a27f-al-accessibility-violations-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-44fa48dd6511345f325d",
+              "file": "ui.spec.js",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "sign-up exposes required fields and password visibility toggle",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1648,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:00.879Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-public-authentication-U-0e081--password-visibility-toggle-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-174762c0c2729dcca935",
+              "file": "ui.spec.js",
+              "line": 24,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "protected route and dashboard",
+          "file": "ui.spec.js",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "unauthenticated users are redirected to sign-in",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1183,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:42.867Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-60903-s-are-redirected-to-sign-in-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-207a3c3fa81b983dbccc",
+              "file": "ui.spec.js",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "dashboard renders empty state and navigation shell",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1374,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:44.073Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-ad847--state-and-navigation-shell-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-e5fa666bb72a560f79c0",
+              "file": "ui.spec.js",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "dashboard renders completed and draft prediction cards",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1082,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:45.468Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-187b4--and-draft-prediction-cards-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-f4ece65f900e2f6f5cf9",
+              "file": "ui.spec.js",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "unauthenticated users are redirected to sign-in",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1714,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:02.549Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-60903-s-are-redirected-to-sign-in-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-86459b809a0bdc18d649",
+              "file": "ui.spec.js",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "dashboard renders empty state and navigation shell",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1827,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:04.279Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-ad847--state-and-navigation-shell-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-56f1252e4c7abf467d37",
+              "file": "ui.spec.js",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "dashboard renders completed and draft prediction cards",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1748,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:06.123Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-protected-route-and-das-187b4--and-draft-prediction-cards-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-c1a07267a8c5fb31fbe9",
+              "file": "ui.spec.js",
+              "line": 55,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "prediction form and results",
+          "file": "ui.spec.js",
+          "line": 70,
+          "column": 6,
+          "specs": [
+            {
+              "title": "new prediction validates title, manages tags, and submits a form",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1162,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:46.578Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-808ea-ges-tags-and-submits-a-form-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-811f96cecab41a79bf2e",
+              "file": "ui.spec.js",
+              "line": 71,
+              "column": 3
+            },
+            {
+              "title": "prediction result renders forecast canvas and submit-another navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1131,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:47.763Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-4c4a4-d-submit-another-navigation-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-086bb625cf5290ea9330",
+              "file": "ui.spec.js",
+              "line": 89,
+              "column": 3
+            },
+            {
+              "title": "new prediction validates title, manages tags, and submits a form",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2682,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:07.898Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-808ea-ges-tags-and-submits-a-form-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-32aa450e0ab04668e529",
+              "file": "ui.spec.js",
+              "line": 71,
+              "column": 3
+            },
+            {
+              "title": "prediction result renders forecast canvas and submit-another navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2168,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:10.601Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-prediction-form-and-res-4c4a4-d-submit-another-navigation-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-3e324ffd8f6076beb0e1",
+              "file": "ui.spec.js",
+              "line": 89,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "trends, settings, channel, and shared controls",
+          "file": "ui.spec.js",
+          "line": 99,
+          "column": 6,
+          "specs": [
+            {
+              "title": "trends renders summary cards, chart, and category breakdown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1083,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:48.912Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-9e1c5-hart-and-category-breakdown-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-b7142bf936d8fbc1c3fb",
+              "file": "ui.spec.js",
+              "line": 100,
+              "column": 3
+            },
+            {
+              "title": "settings saves profile, validates password confirmation, and toggles theme",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1174,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:50.012Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-13963-firmation-and-toggles-theme-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-b96528be70989f2fe9ff",
+              "file": "ui.spec.js",
+              "line": 109,
+              "column": 3
+            },
+            {
+              "title": "channel displays data and supports refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1181,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:51.201Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-4373a-s-data-and-supports-refresh-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-7c698e09693e9cb0a2ff",
+              "file": "ui.spec.js",
+              "line": 129,
+              "column": 3
+            },
+            {
+              "title": "notifications show unread items and mark-all-read",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1136,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:14:52.401Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-1da28-ead-items-and-mark-all-read-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-93b93de24c92a80752b6",
+              "file": "ui.spec.js",
+              "line": 139,
+              "column": 3
+            },
+            {
+              "title": "trends renders summary cards, chart, and category breakdown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3329,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:12.789Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-9e1c5-hart-and-category-breakdown-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-da9de6a34b066ffe70d5",
+              "file": "ui.spec.js",
+              "line": 100,
+              "column": 3
+            },
+            {
+              "title": "settings saves profile, validates password confirmation, and toggles theme",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2543,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:16.141Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-13963-firmation-and-toggles-theme-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-7db071eec38433fea058",
+              "file": "ui.spec.js",
+              "line": 109,
+              "column": 3
+            },
+            {
+              "title": "channel displays data and supports refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1665,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:18.710Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-4373a-s-data-and-supports-refresh-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-2ba05cc9fbd1cc5ee2af",
+              "file": "ui.spec.js",
+              "line": 129,
+              "column": 3
+            },
+            {
+              "title": "notifications show unread items and mark-all-read",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1944,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-20T11:15:20.394Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\DSEP\\TrendCast\\frontend\\test-results\\ui-trends-settings-channel-1da28-ead-items-and-mark-all-read-firefox\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6cacfa4b79c1be8f210f-94129866c6ab73de37fb",
+              "file": "ui.spec.js",
+              "line": 139,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-20T11:14:36.583Z",
+    "duration": 46727.495,
+    "expected": 24,
+    "skipped": 2,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
