@@ -11,7 +11,8 @@ router = APIRouter(prefix="/channel", tags=["channel"])
 
 UPDATE_CHANNEL_SQL = """
     UPDATE users
-    SET channel_data = %(channel_data)s, channel_fetch_error = %(channel_fetch_error)s
+    SET channel_data = COALESCE(%(channel_data)s, channel_data),
+        channel_fetch_error = %(channel_fetch_error)s
     WHERE id = %(user_id)s
 """
 
@@ -19,7 +20,8 @@ UPDATE_CHANNEL_SQL = """
 def refresh_user_channel(user_id: int, channel_url: str) -> tuple[dict | None, str | None]:
     """Resolves channel_url via the YouTube API, persists the result on the
     user row, and writes a channel_fetch_success/error notification. Returns
-    (channel_data, fetch_error) - exactly one is non-None."""
+    (channel_data, fetch_error) - exactly one is non-None. A failed fetch
+    records the error but keeps the last good snapshot already on the user."""
     channel_data: dict | None = None
     fetch_error: str | None = None
 
@@ -84,4 +86,5 @@ def get_my_channel(user: dict = Depends(get_current_user)):
 @router.post("/refresh", response_model=ChannelOut)
 def refresh_my_channel(user: dict = Depends(get_current_user)):
     channel_data, fetch_error = refresh_user_channel(user["id"], user.get("channel_url") or "")
-    return channel_out(user.get("channel_url"), channel_data, fetch_error)
+    # on failure the previous snapshot is still stored, so keep showing it
+    return channel_out(user.get("channel_url"), channel_data or user.get("channel_data"), fetch_error)
