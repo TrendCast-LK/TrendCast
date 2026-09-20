@@ -7,13 +7,23 @@ from PIL import Image
 from psycopg2.extras import Json
 
 from db import get_cursor
-from inference import get_state, run_forecast_on_image
+from inference import (
+    ChannelNotFoundError,
+    InsufficientHistoryError,
+    QuotaExceededError,
+    get_state,
+    run_forecast_on_image,
+)
 from models import PredictionOut
 from routers.notifications import create_notification
 from security import get_current_user
 from storage import save_upload
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
+
+MAX_THUMBNAIL_BYTES = 10 * 1024 * 1024   # 10 MB
+MAX_DATASET_BYTES = 50 * 1024 * 1024     # 50 MB
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 INSERT_SQL = """
     INSERT INTO predictions (
@@ -34,12 +44,20 @@ SELECT_ONE_SQL = "SELECT * FROM predictions WHERE id = %(id)s AND user_id = %(us
 SELECT_ALL_SQL = "SELECT * FROM predictions WHERE user_id = %(user_id)s ORDER BY created_at DESC"
 DELETE_SQL = "DELETE FROM predictions WHERE id = %(id)s AND user_id = %(user_id)s"
 
-# Heuristic, not a model output: the XGBoost regressors behind run_forecast_on_image
-# don't produce a real confidence/uncertainty estimate, so this reflects whether
-# the prediction used the caller's actual channel stats (more reliable) or fell
-# back to dataset-wide medians (a rougher estimate).
-CONFIDENCE_WITH_CHANNEL_CONTEXT = 0.85
-CONFIDENCE_WITHOUT_CHANNEL_CONTEXT = 0.55
+# The model does not emit a calibrated confidence. What it does emit is an
+# uncertainty BAND (range_7d), and the width of that band relative to the point
+# estimate is a genuine signal. We derive a 0-1 score from it so the UI has
+# something meaningful rather than a hardcoded constant.
+#
+# Narrow band -> higher score. This is still a heuristic, but it varies with the
+# actual prediction instead of merely recording which code path ran.
+def _confidence_from_band(point: float, low: float, high: float) -> float:
+    if point <= 0 or high <= low:
+        return 0.3
+    relative_width = (high - low) / point
+    # relative_width ~2.0 is typical; ~4.0 is very uncertain
+    score = 1.0 / (1.0 + relative_width / 2.0)
+    return round(min(max(score, 0.05), 0.95), 3)
 
 
 def row_to_prediction_out(row: dict) -> PredictionOut:
@@ -71,32 +89,53 @@ def _parse_scheduled_upload_time(target_date: str | None, target_time: str | Non
     return datetime.combine(parsed_date, parsed_time, tzinfo=timezone.utc)
 
 
+def _read_limited(upload: UploadFile, max_bytes: int, label: str) -> bytes:
+    data = upload.file.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{label} exceeds the {max_bytes // (1024 * 1024)}MB limit",
+        )
+    return data
+
+
 @router.post("", response_model=PredictionOut)
 def create_prediction(
     user: dict = Depends(get_current_user),
     title: str = Form(...),
     category: str | None = Form(None),
+    category_id: int | None = Form(None),
+    description: str | None = Form(None),
     tags: str = Form(""),
     target_date: str | None = Form(None),
     target_time: str | None = Form(None),
+    duration: str | None = Form(None),
     save_as_draft: str = Form("false"),
     thumbnail: UploadFile | None = File(None),
     dataset: UploadFile | None = File(None),
 ):
-    is_draft = save_as_draft.lower() == "true"
+    is_draft = save_as_draft.strip().lower() in {"true", "1", "yes", "on"}
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     if not is_draft and thumbnail is None:
         raise HTTPException(status_code=400, detail="A thumbnail is required to run a prediction")
 
-    thumbnail_path = None
+    thumbnail_bytes: bytes | None = None
+    thumbnail_path: str | None = None
     if thumbnail is not None:
-        thumbnail_bytes = thumbnail.file.read()
+        if thumbnail.content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported thumbnail type '{thumbnail.content_type}'. Use JPEG, PNG or WebP.",
+            )
+        thumbnail_bytes = _read_limited(thumbnail, MAX_THUMBNAIL_BYTES, "Thumbnail")
         thumbnail_path = save_upload(thumbnail_bytes, thumbnail.filename)
 
     dataset_path = None
     if dataset is not None:
-        dataset_path = save_upload(dataset.file.read(), dataset.filename)
+        dataset_path = save_upload(
+            _read_limited(dataset, MAX_DATASET_BYTES, "Dataset"), dataset.filename
+        )
 
     fields = {
         "user_id": user["id"],
@@ -121,31 +160,73 @@ def create_prediction(
         try:
             image = Image.open(io.BytesIO(thumbnail_bytes)).convert("RGB")
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=f"thumbnail was not a valid image: {exc}") from exc
+            raise HTTPException(
+                status_code=400, detail=f"Thumbnail was not a valid image: {exc}"
+            ) from exc
 
         scheduled_upload_time = _parse_scheduled_upload_time(target_date, target_time)
         channel_data = user.get("channel_data") or {}
         channel_id = channel_data.get("channel_id")
 
-        result = run_forecast_on_image(get_state(), title, image, scheduled_upload_time, channel_id)
+        if not channel_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Your account is not linked to a YouTube channel, "
+                       "so we cannot estimate a baseline for your forecasts.",
+            )
 
-        predicted_views = result["curve"][-1]["views"]
-        confidence = (
-            CONFIDENCE_WITH_CHANNEL_CONTEXT if result["used_channel_context"] else CONFIDENCE_WITHOUT_CHANNEL_CONTEXT
+        try:
+            result = run_forecast_on_image(
+                get_state(),
+                title=title,
+                image=image,
+                scheduled_upload_time=scheduled_upload_time,
+                channel_id=channel_id,
+                tags=tag_list,
+                duration=duration,
+                description=description,
+                category_id=category_id,
+            )
+        except InsufficientHistoryError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except ChannelNotFoundError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail="We could not find your YouTube channel. Check that it is public.",
+            ) from exc
+        except QuotaExceededError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Forecasting is temporarily unavailable (YouTube API limit reached). "
+                       "Please try again later.",
+            ) from exc
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=503, detail=f"Forecast service unavailable: {exc}"
+            ) from exc
+
+        predicted_views = int(result["point_estimate_7d"])
+        confidence = _confidence_from_band(
+            result["point_estimate_7d"],
+            result["range_7d"]["low"],
+            result["range_7d"]["high"],
         )
-        avg_views_per_video = result["avg_views_per_video"]
-        change_vs_avg = (
-            (predicted_views - avg_views_per_video) / avg_views_per_video if avg_views_per_video else None
-        )
+        baseline = result["channel_baseline"]
+        change_vs_avg = (predicted_views - baseline) / baseline if baseline else None
+
+        shape_params = result.get("shape_params", {})
 
         fields.update(
             predicted_views=predicted_views,
             confidence=confidence,
             change_vs_avg=change_vs_avg,
             trajectory=Json(result["curve"]),
-            v_inf=result["v_inf"],
-            tau=result["tau"],
-            used_channel_context=result["used_channel_context"],
+            # v_inf: the asymptotic 7-day total. tau: the curve's timing
+            # parameter (t0 for logistic, c for power-law). Both are real
+            # outputs of the shape model, not placeholders.
+            v_inf=float(result["point_estimate_7d"]),
+            tau=float(shape_params.get("t0", shape_params.get("c", 0.0))),
+            used_channel_context=bool(result["used_channel_context"]),
         )
 
     with get_cursor(commit=True) as cur:
@@ -153,12 +234,17 @@ def create_prediction(
         prediction_id, created_at = cur.fetchone()
 
     if not is_draft:
-        create_notification(
-            user["id"],
-            "prediction_complete",
-            "Prediction ready",
-            f'Your prediction for "{title}" is ready to view.',
-        )
+        try:
+            create_notification(
+                user["id"],
+                "prediction_complete",
+                "Prediction ready",
+                f'Your prediction for "{title}" is ready to view.',
+            )
+        except Exception:  # noqa: BLE001
+            # the prediction is already committed; a failed notification
+            # should not surface as a request failure
+            pass
 
     with get_cursor() as cur:
         cur.execute(SELECT_ONE_SQL, {"id": prediction_id, "user_id": user["id"]})

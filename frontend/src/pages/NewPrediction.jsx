@@ -5,13 +5,32 @@ import Topbar from "../components/Topbar";
 import * as api from "../lib/api";
 import { ApiError } from "../lib/api";
 
-const CATEGORIES = ["Financial Performance", "User Engagement", "Market Trends", "Tech Review", "Gadgets"];
+const CATEGORIES = [
+  "Autos & Vehicles",
+  "Comedy",
+  "Education",
+  "Entertainment",
+  "Film & Animation",
+  "Gaming",
+  "Howto & Style",
+  "Music",
+  "News & Politics",
+  "Nonprofits & Activism",
+  "People & Blogs",
+  "Pets & Animals",
+  "Science & Technology",
+  "Sports",
+  "Travel & Events",
+];
 
 export default function NewPrediction() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [lengthMinutes, setLengthMinutes] = useState("");
+  const [lengthSeconds, setLengthSeconds] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
@@ -115,6 +134,52 @@ export default function NewPrediction() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
+                </div>
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
+                    Video Description
+                  </label>
+                  <textarea
+                    className="input-field font-body-md text-body-md text-on-surface min-h-[96px] resize-y"
+                    placeholder="Describe what this video is about..."
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
+                    Video Length
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        className="input-field font-body-md text-body-md text-on-surface"
+                        placeholder="0"
+                        type="number"
+                        min="0"
+                        value={lengthMinutes}
+                        onChange={(e) => setLengthMinutes(e.target.value)}
+                      />
+                      <span className="font-label-sm text-label-sm text-on-surface-variant mt-1 block">
+                        Minutes
+                      </span>
+                    </div>
+                    <div className="relative flex-1">
+                      <input
+                        className="input-field font-body-md text-body-md text-on-surface"
+                        placeholder="0"
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={lengthSeconds}
+                        onChange={(e) => setLengthSeconds(e.target.value)}
+                      />
+                      <span className="font-label-sm text-label-sm text-on-surface-variant mt-1 block">
+                        Seconds
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
@@ -252,22 +317,6 @@ export default function NewPrediction() {
                     </p>
                   </>
                 )}
-              </div>
-
-              <div className="bg-surface-container rounded-xl p-6 mt-8">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-label-md text-label-md text-on-surface">Initial Confidence Estimate</span>
-                  <span className="material-symbols-outlined text-tertiary">info</span>
-                </div>
-                <div className="w-full bg-surface-container-highest rounded-full h-2 mb-2 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500"
-                    style={{ width: file ? "65%" : "15%" }}
-                  />
-                </div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant text-right">
-                  {file ? "Ready — confidence finalizes on submit" : "Pending file upload..."}
-                </p>
               </div>
             </div>
 

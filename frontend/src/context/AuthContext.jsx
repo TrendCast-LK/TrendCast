@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import * as api from "../lib/api";
 
-const USER_KEY = "viewcast_user";
+const USER_KEY = "trendcast_user";
 
 const AuthContext = createContext(null);
 

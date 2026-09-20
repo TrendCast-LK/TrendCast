@@ -47,7 +47,7 @@ function AppearanceSection() {
         Appearance
       </h3>
       <p className="font-body-md text-body-md text-on-surface-variant mb-4">
-        Choose how ViewCast looks on this device.
+        Choose how TrendCast looks on this device.
       </p>
       <div className="flex gap-4">
         {options.map((option) => {

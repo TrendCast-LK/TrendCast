@@ -25,7 +25,7 @@ export default function Sidebar({ active = "dashboard" }) {
         </div>
         <div>
           <h1 className="font-headline-md text-headline-md font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            ViewCast
+            TrendCast
           </h1>
           <p className="font-label-sm text-label-sm text-on-surface-variant">Predictive Brilliance</p>
         </div>

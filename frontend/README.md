@@ -1,9 +1,9 @@
-# Frontend — ViewCast
+# Frontend — TrendCast
 
 The React dashboard for TrendCast. Users sign up with their YouTube
 channel, then run predictions for planned uploads.
 
-Branded as **ViewCast**. Built from a design called "Insight Glow"
+Branded as **TrendCast**. Built from a design called "Insight Glow"
 (purple → pink glassmorphism).
 
 See the [root README](../README.md) for how this fits into the whole system.

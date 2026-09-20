@@ -74,7 +74,7 @@ export default function SignUp() {
               <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
             </div>
             <span className="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">
-              ViewCast
+              TrendCast
             </span>
           </div>
           <div className="relative z-10 max-w-lg">
@@ -119,7 +119,7 @@ export default function SignUp() {
             </div>
           </div>
           <div className="relative z-10 font-body-md text-body-md text-sm text-on-surface-variant">
-            © {new Date().getFullYear()} ViewCast. All rights reserved.
+            © {new Date().getFullYear()} TrendCast. All rights reserved.
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export default function SignUp() {
                 <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
               </div>
               <span className="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">
-                ViewCast
+                TrendCast
               </span>
             </div>
 

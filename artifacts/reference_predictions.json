@@ -1,0 +1,222 @@
+[
+  {
+    "video_id": "EJqLEilEoxg",
+    "channel_id": "UCJrDBRZ1lFAVTJuSckTvceQ",
+    "title": "Day 1 Vlogging - \u0dbb\u0ddd\u0db1\u0dca\u0daf\u0dda not a solo date ",
+    "duration": "PT4M53S",
+    "S": 92.0,
+    "expected_log_m": -1.5374149047323311,
+    "expected_m": 0.2149360139395827,
+    "expected_N7": 19.774113282441608,
+    "actual_N7": 13.0
+  },
+  {
+    "video_id": "BRZPGhL2Ybg",
+    "channel_id": "UCl2s_wU_NKeue51sdiP1s0g",
+    "title": "E24 caravan van  #automobile #restoration #srilanka ",
+    "duration": "PT1M28S",
+    "S": 55.0,
+    "expected_log_m": -0.3652633623120897,
+    "expected_m": 0.6940138497154836,
+    "expected_N7": 38.1707617343516,
+    "actual_N7": 161.0
+  },
+  {
+    "video_id": "0evmOnG1i2g",
+    "channel_id": "UC4VFmgvUr5nNN2PpG-dg7hw",
+    "title": "Winning Strategy on US Stocks",
+    "duration": "PT1M15S",
+    "S": 207.5,
+    "expected_log_m": -0.27960595305366065,
+    "expected_m": 0.7560816144152498,
+    "expected_N7": 156.88693499116434,
+    "actual_N7": 33.0
+  },
+  {
+    "video_id": "exUWx2XbqXI",
+    "channel_id": "UCT83ymyAGm7Gnk_4ifxjxIA",
+    "title": "\u0dbd\u0dd9\u0da9\u0d9a\u0dca \u0dc4\u0dd0\u0daf\u0dd2\u0dbd\u0dc0\u0dad\u0dca \u0db1\u0dd2\u0daf\u0dc4\u0dc3\u0dda \u0d89\u0db1\u0dca\u0db1 \u0db1\u0dd0\u0dad\u0dd2 \u0dc4\u0dd0\u0da7\u0dd2 | \u0d85\u0db8\u0dd4\u0dad\u0dd4 \u0dc3\u0d82\u0d9a\u0dca\u200d\u0dbb\u0dcf\u0db1\u0dca\u0dad\u0dd2\u0dba- \u0dc3\u0dad\u0dd2\u0dba\u0dda \u0daf\u0dd2\u0db1\u0dc0\u0dbd \u0dbb\u0dcf\u0dad\u0dca\u200d\u0dbb\u0dd3 8",
+    "duration": "PT2M59S",
+    "S": 10585.5,
+    "expected_log_m": -0.54881379053949,
+    "expected_m": 0.5776345997753319,
+    "expected_N7": 6114.551055921776,
+    "actual_N7": 2660.0
+  },
+  {
+    "video_id": "MUQ9pr8dfUE",
+    "channel_id": "UCafmMOK3jJ36ICziuNw0cWA",
+    "title": "Modern balcony grill railings design \ud83c\udfd8\ufe0f",
+    "duration": "PT34S",
+    "S": 122.0,
+    "expected_log_m": 0.026444719817431114,
+    "expected_m": 1.0267974841403742,
+    "expected_N7": 125.26929306512565,
+    "actual_N7": 214.0
+  },
+  {
+    "video_id": "0slbn1nuNJw",
+    "channel_id": "UCnE7Z-jAIovXuEMO5GnIHKA",
+    "title": "Only Smart People Get This Squirrel Riddle! \ud83d\udc3f\ufe0f\ud83e\udd14 #getleboss #funny #riddles",
+    "duration": "PT14S",
+    "S": 92.0,
+    "expected_log_m": -0.1862645129065495,
+    "expected_m": 0.8300540059434405,
+    "expected_N7": 76.36496854679652,
+    "actual_N7": 10.0
+  },
+  {
+    "video_id": "Cj4AcUkFvYM",
+    "channel_id": "UC8U5Mgl9nbkm5vOJ0SMtQgA",
+    "title": "\u0db8\u0db1\u0ddd \u0dc0\u0dd2\u0daf\u0dca\u200d\u0dba\u0dcf \u0db4\u0dbb\u0dca\u0dba\u0dda\u0dc2\u0dab \u0d86\u0dba\u0dad\u0db1 \u0db8\u0d9c\u0dd2\u0db1\u0dca \u0dad\u0dbb\u0dd4\u0dab \u0dc0\u0dd0\u0da9\u0dd2\u0dc4\u0dd2\u0da7\u0dd2 \u0dbb\u0dd0\u0d9a\u0dd2\u0dba\u0dcf \u0d87\u0dad\u0dd2 \u0db1\u0dd0\u0dad\u0dd2 \u0dc3\u0dd0\u0db8\u0da7\u0db8 \u0dc3\u0dc4\u0db1 \u0dbb\u0dd0\u0dc3\u0d9a\u0dca",
+    "duration": "PT7M19S",
+    "S": 116.5,
+    "expected_log_m": -0.05929869509434514,
+    "expected_m": 0.942425229319124,
+    "expected_N7": 109.79253921567795,
+    "actual_N7": 151.0
+  },
+  {
+    "video_id": "ykNAtf2Qw8Q",
+    "channel_id": "UCJA-NQ4MtcRIog66wziD8fA",
+    "title": "Focus Will Shift to Management and Finance following the constitution",
+    "duration": "PT1M26S",
+    "S": 68758.0,
+    "expected_log_m": -1.2654903219179858,
+    "expected_m": 0.2821009419493268,
+    "expected_N7": 19396.69656655181,
+    "actual_N7": 611.0
+  },
+  {
+    "video_id": "wl8kCHHZHHk",
+    "channel_id": "UCKA7SQOUkD1_z5lr016Q70w",
+    "title": "Egg bread pockets | Ramadan Recipes",
+    "duration": "PT41S",
+    "S": 606114.0,
+    "expected_log_m": 0.270044218201818,
+    "expected_m": 1.3100223762863767,
+    "expected_N7": 794022.902580441,
+    "actual_N7": 930504.0
+  },
+  {
+    "video_id": "O81Q0Jw18io",
+    "channel_id": "UCtz2Mog_5r1EtauBQ7veK1g",
+    "title": "Couple \u0d91\u0d9a\u0d9a\u0da7 Anniversary \u0d91\u0d9a\u0da7 \u0dba\u0db1\u0dca\u0db1 \u0dbd\u0dc3\u0dca\u0dc3\u0db1\u0db8 private beach Villa \u0d91\u0d9a\u0d9a\u0dca #shorts #beachv",
+    "duration": "PT36S",
+    "S": 90.0,
+    "expected_log_m": 0.29210248831644176,
+    "expected_m": 1.3392402670862258,
+    "expected_N7": 120.53162403776032,
+    "actual_N7": 1196.0
+  },
+  {
+    "video_id": "P1Zwt70FflY",
+    "channel_id": "UClrBWn6EuEy5Kb2BUjd47uA",
+    "title": "Camshaft replacement \u2699bike #bike #camshaft #bikelife #service #YakadaHeena #repa",
+    "duration": "PT11M13S",
+    "S": 446.5,
+    "expected_log_m": -0.9590274155297546,
+    "expected_m": 0.3832654628016276,
+    "expected_N7": 171.1280291409267,
+    "actual_N7": 35.0
+  },
+  {
+    "video_id": "a7oOC1lHLR0",
+    "channel_id": "UCzZBI8snmZD7JAPudadsh-g",
+    "title": "Chocolate loaded cake | Kinza Cake Palace",
+    "duration": "PT27S",
+    "S": 333.5,
+    "expected_log_m": -0.07338272303416382,
+    "expected_m": 0.9292451184494129,
+    "expected_N7": 309.9032470028792,
+    "actual_N7": 68.0
+  },
+  {
+    "video_id": "7REHj1K-Byo",
+    "channel_id": "UCUmIWeepSL4v1y7vJt7X0Vg",
+    "title": "\u0db6\u0dd3\u0da7\u0dbb\u0dca,\u0d85\u0dc0\u0db1\u0dca \u0db1\u0dd0\u0dad\u0dd4\u0dc0 \u0db6\u0db1\u0dcf\u0db1\u0dcf \u0d9a\u0dda\u0d9a\u0dca \u0dc4\u0daf\u0db8\u0dd4\u0daf No Oven Banana Bread Recipe #bananabread #cake",
+    "duration": "PT21S",
+    "S": 653.5,
+    "expected_log_m": 0.8753361048188525,
+    "expected_m": 2.39968170302462,
+    "expected_N7": 1568.1919929265891,
+    "actual_N7": 1134.0
+  },
+  {
+    "video_id": "R5CAsCGkRlE",
+    "channel_id": "UCdO0g41vB2lPZdc6BlPKwMg",
+    "title": "Am I the A Hole for not accepting my sister's relationship with my ex despite he",
+    "duration": "PT51S",
+    "S": 11.0,
+    "expected_log_m": 0.09362949042988417,
+    "expected_m": 1.0981527944123364,
+    "expected_N7": 12.0796807385357,
+    "actual_N7": 12.0
+  },
+  {
+    "video_id": "6xxeMqmybFU",
+    "channel_id": "UCjjLIssbpBJhGOu6EjC0Zxg",
+    "title": "Message me on fb or Instagram : physique by sari",
+    "duration": "PT20S",
+    "S": 161.0,
+    "expected_log_m": -0.04000064146270866,
+    "expected_m": 0.9607888228419248,
+    "expected_N7": 154.6870004775499,
+    "actual_N7": 42.0
+  },
+  {
+    "video_id": "BhAByCv3NFk",
+    "channel_id": "UCGduWUqYR_MVeD98RGXnZsg",
+    "title": "We went to see a Frozen Waterfall In Huntsville ,Canada Sinhala Vlog",
+    "duration": "PT12M22S",
+    "S": 110.5,
+    "expected_log_m": -0.3170108266110736,
+    "expected_m": 0.7283228698145687,
+    "expected_N7": 80.47967711450984,
+    "actual_N7": 174.0
+  },
+  {
+    "video_id": "wfBImGqQn48",
+    "channel_id": "UCH9G81y5scjvQY9xbpjgnEQ",
+    "title": "Java Bank Management System Project | Console Application in Java | Tamil | Epis",
+    "duration": "PT39M42S",
+    "S": 1.5,
+    "expected_log_m": 0.49201110824386296,
+    "expected_m": 1.6356022877734047,
+    "expected_N7": 2.453403431660107,
+    "actual_N7": 34.0
+  },
+  {
+    "video_id": "EP2h5Srog6M",
+    "channel_id": "UCCK3OZi788Ok44K97WAhLKQ",
+    "title": "\u0dc0\u0dd2\u0db1\u0dd2\u0dc3\u0dd4\u0dbb\u0dd4 \u0dc0\u0dd2\u0dc1\u0dca\u200d\u0dbb\u0dcf\u0db8 \u0dc0\u0dba\u0dc3 \u0d9c\u0dd0\u0db1 \u0d9a\u0dd2\u0dba\u0db1\u0dca\u0db1 \u0d92\u0d9a\u0dcf\u0db6\u0daf\u0dca\u0db0 \u0dc0\u0dd2\u0db4\u0d9a\u0dca\u0dc2\u0dba \u0d85\u0dc3\u0dca\u0d9c\u0dd2\u0dbb\u0dd2 \u0db8\u0dc4 \u0db1\u0dcf\u0dc4\u0dd2\u0db8\u0dd2\u0dba\u0db1\u0dca \u0db6\u0dd0\u0dc4\u0dd0\u0daf\u0d9a\u0dd3 | ",
+    "duration": "PT3M30S",
+    "S": 2509.5,
+    "expected_log_m": -0.2145505581133169,
+    "expected_m": 0.8069040151559762,
+    "expected_N7": 2024.9256260339223,
+    "actual_N7": 2184.0
+  },
+  {
+    "video_id": "rmrw58Zl1fg",
+    "channel_id": "UCKK6g7TynSyThadtbI_bOFg",
+    "title": "\u0d86\u0d9a\u0dbb\u0dca\u0dc2\u0dab \u0db1\u0dd3\u0dad\u0dd2\u0dba \ud83d\ude18#moneymanifesting #lawofattraction #moneyattraction  #sinhalaposit",
+    "duration": "PT11S",
+    "S": 1853.0,
+    "expected_log_m": -0.26046097435793747,
+    "expected_m": 0.7706962327044898,
+    "expected_N7": 1428.1001192014196,
+    "actual_N7": 1277.0
+  },
+  {
+    "video_id": "1gOzkVhgCAM",
+    "channel_id": "UCPWZ7EHnH2FBUtAahgZ7Pqw",
+    "title": "\u0d85\u0dbd\u0dd2\u0dba\u0dcf \u0dc4\u0ddc\u0da9\u0dc0\u0dd0\u0dbd \u0db4\u0daf\u0dca\u0daf\u0db1\u0dc0\u0dcf...\ud83d\udc18",
+    "duration": "PT58S",
+    "S": 657.5,
+    "expected_log_m": -0.18128397039780156,
+    "expected_m": 0.834198437395951,
+    "expected_N7": 548.4854725878378,
+    "actual_N7": 1273.0
+  }
+]
