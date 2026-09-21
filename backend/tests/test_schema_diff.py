@@ -87,6 +87,33 @@ def test_disabled_row_level_security_is_reported(expected, damaged):
     assert problem.startswith("changed row-level security setting: users")
 
 
+# The same constraint as Postgres writes it in a live database and in a restored copy of it.
+IN_LIST_BUILT = ("CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, "
+                 "'complete'::character varying])::text[])))")
+IN_LIST_RESTORED = ("CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, "
+                    "('complete'::character varying)::text])))")
+
+
+def test_restore_rewording_of_in_list_constraints_is_not_a_difference():
+    assert h.normalize_constraint(IN_LIST_BUILT) == h.normalize_constraint(IN_LIST_RESTORED)
+
+
+@pytest.mark.parametrize("changed", [
+    IN_LIST_RESTORED.replace("'complete'", "'finished'"),
+    IN_LIST_RESTORED.replace("('draft'::character varying)::text, ", ""),
+    IN_LIST_RESTORED.replace("= ANY", "<> ALL"),
+], ids=["different-value", "value-removed", "different-operator"])
+def test_real_constraint_changes_survive_normalisation(changed):
+    assert h.normalize_constraint(changed) != h.normalize_constraint(IN_LIST_BUILT)
+
+
+def test_restored_constraint_wording_produces_no_diff():
+    fp = {"columns": [], "indexes": [], "views": [], "rls": [],
+          "constraints": [("predictions", "chk_predictions_status", IN_LIST_BUILT)]}
+    restored = {**fp, "constraints": [("predictions", "chk_predictions_status", IN_LIST_RESTORED)]}
+    assert h.diff_schema(fp, restored) == []
+
+
 def test_several_problems_are_all_listed(expected, damaged):
     damaged[1].execute("ALTER TABLE notifications DROP CONSTRAINT chk_notifications_type")
     damaged[1].execute("DROP INDEX idx_users_email")

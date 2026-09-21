@@ -67,19 +67,11 @@ def backup_and_restore(conn, cur, create_database):
     restored.rollback()
 
 
-def constraint_names_only(fingerprint):
-    """pg_dump output is re-parsed on restore, so Postgres deparses `IN (...)` checks differently
-    (`ARRAY[..]::text[]` vs `ARRAY[(..)::text]`) although they mean the same thing. Compare the
-    constraints by name here and by behaviour in test_in_list_constraints_still_behave."""
-    return {**fingerprint, "constraints": [(table, name) for table, name, _ in fingerprint["constraints"]]}
-
-
 def test_restored_schema_is_identical(backup_and_restore):
     source_cur, restored = backup_and_restore
     with restored.cursor() as restored_cur:
-        expected = constraint_names_only(h.schema_fingerprint(source_cur))
-        actual = constraint_names_only(h.schema_fingerprint(restored_cur))
-    assert h.diff_schema(expected, actual) == []
+        problems = h.diff_schema(h.schema_fingerprint(source_cur), h.schema_fingerprint(restored_cur))
+    assert problems == []
 
 
 IN_LIST_CONSTRAINTS = [

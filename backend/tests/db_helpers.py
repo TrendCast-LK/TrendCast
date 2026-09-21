@@ -1,5 +1,6 @@
 """Row builders and schema introspection helpers for the database tests."""
 
+import re
 from datetime import datetime, timezone
 
 from psycopg2 import sql
@@ -138,8 +139,24 @@ def snapshot_rows(cur, tables) -> dict:
     return out
 
 
+def normalize_constraint(definition: str) -> str:
+    """Canonical form of a constraint definition.
+
+    A dump/restore round trip re-parses `x IN ('a', 'b')` checks, so Postgres deparses them
+    differently although they mean the same thing:
+        ANY ((ARRAY['a'::character varying, ...])::text[])
+        ANY (ARRAY[('a'::character varying)::text, ...])
+    Both are rewritten to `ANY (ARRAY['a'::character varying, ...])`. Real changes (a different
+    list, another operator) are left intact and still show up as differences.
+    """
+    definition = re.sub(r"\('([^']*)'::character varying\)::text", r"'\1'::character varying", definition)
+    return re.sub(r"ANY \(\((ARRAY\[[^\]]*\])\)::text\[\]\)", r"ANY (\1)", definition)
+
+
 def diff_schema(expected: dict, actual: dict) -> list:
     """Human-readable differences between two schema_fingerprint() results."""
+    expected = {**expected, "constraints": [(t, n, normalize_constraint(d)) for t, n, d in expected["constraints"]]}
+    actual = {**actual, "constraints": [(t, n, normalize_constraint(d)) for t, n, d in actual["constraints"]]}
     problems = []
     for label, key_len, section in (
         ("column", 2, "columns"), ("index", 2, "indexes"),
