@@ -4,8 +4,9 @@ A throwaway Postgres (pgvector image) is started in Docker once per session.
 The schema scripts are applied to a template database, and each test gets its
 own copy via CREATE DATABASE ... TEMPLATE, so tests are isolated and fast.
 
-These tests never read SUPABASE_DB_URL and never import config.py, so they
-cannot touch the live database. To use an already-running Postgres instead of
+These tests never read the real SUPABASE_DB_URL: the `backend` fixture sets it to
+the disposable server before importing config.py and asserts that it took effect,
+so they cannot touch the live database. To use an already-running Postgres instead of
 Docker, set TEST_DB_ADMIN_URL (a superuser URL for a *disposable* server).
 """
 
@@ -182,13 +183,17 @@ class FakeInferenceError(Exception):
 def _stub_inference_module():
     """Stands in for backend/inference.py so tests don't load torch or the model."""
     stub = types.ModuleType("inference")
-    stub.ChannelNotFoundError = type("ChannelNotFoundError", (Exception,), {})
-    stub.InsufficientHistoryError = type("InsufficientHistoryError", (Exception,), {})
-    stub.QuotaExceededError = type("QuotaExceededError", (Exception,), {})
-    stub.get_state = lambda: object()
 
     def _unexpected(*args, **kwargs):
         raise AssertionError("the model was called but the test did not expect it")
+
+    stub.ChannelNotFoundError = type("ChannelNotFoundError", (Exception,), {})
+    stub.InsufficientHistoryError = type("InsufficientHistoryError", (Exception,), {})
+    stub.QuotaExceededError = type("QuotaExceededError", (Exception,), {})
+    stub.ThumbnailDownloadError = type("ThumbnailDownloadError", (RuntimeError,), {})
+    stub.get_state = lambda: object()
+    stub.load_artifacts = lambda: None
+    stub.run_forecast = lambda *args, **kwargs: _unexpected()
 
     stub.run_forecast_on_image = _unexpected
     return stub
@@ -206,7 +211,7 @@ def backend(pg_server):
 
     import config
     import db
-    from routers import auth, channel, notifications, predictions
+    from routers import auth, channel, dashboard, notifications, predictions, trends
     import storage
 
     # A real .env must never win over the disposable server.
@@ -215,7 +220,7 @@ def backend(pg_server):
     from fastapi import FastAPI
 
     app = FastAPI()
-    for module in (auth, channel, notifications, predictions):
+    for module in (auth, channel, dashboard, notifications, predictions, trends):
         app.include_router(module.router)
 
     yield SimpleNamespace(
