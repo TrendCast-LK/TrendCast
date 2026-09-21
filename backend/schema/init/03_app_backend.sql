@@ -1,6 +1,6 @@
 -- =============================================================================
 -- App Backend Migration
--- File: postgres/init/03_app_backend.sql
+-- File: backend/schema/init/03_app_backend.sql
 -- Purpose: Adds the tables backing the FastAPI backend's user-facing app
 --          (accounts, saved predictions, notifications) on top of the
 --          ETL-owned channel/video/timeseries tables from 01_schema.sql.
@@ -104,7 +104,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT fk_notifications_user
         FOREIGN KEY (user_id)
         REFERENCES users (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_notifications_type
+        CHECK (type IN ('welcome', 'channel_fetch_success', 'channel_fetch_error', 'prediction_complete'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created
@@ -115,3 +118,11 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
 
 COMMENT ON TABLE notifications IS
     'In-app notifications (welcome, channel fetch results, prediction completion) owned by a user.';
+
+-- Row-level security. Supabase exposes every public-schema table through its REST
+-- API to the anon/authenticated keys unless RLS is on; with RLS on and no
+-- policies those roles see nothing. The backend and scripts connect directly as
+-- the database owner (bypasses RLS), so they are unaffected.
+ALTER TABLE users         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE predictions   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;

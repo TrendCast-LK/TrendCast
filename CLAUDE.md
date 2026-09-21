@@ -2,7 +2,14 @@
 
 ## Database (Supabase / PostgreSQL)
 
-Schema is defined in [youtube-etl-pipeline/postgres/init/01_schema.sql](youtube-etl-pipeline/postgres/init/01_schema.sql), applied automatically on first container start. A second migration, [02_archive_and_switch_channels.sql](youtube-etl-pipeline/postgres/init/02_archive_and_switch_channels.sql), adds `channel_stats_archive`, `videos_archive`, and `view_timeseries_archive` tables that snapshot rows before a channel-set rotation — mirror copies of the core tables below plus `archive_id`/`archived_at`. A third, [03_app_backend.sql](youtube-etl-pipeline/postgres/init/03_app_backend.sql), adds the `users`/`predictions`/`notifications` tables backing the FastAPI app layer (see "App-layer tables" below). These init scripts only auto-apply to a fresh local Postgres container — against the live Supabase DB they must be applied manually (e.g. `psql "$SUPABASE_DB_URL" -f path/to/migration.sql`).
+The schema is owned by the backend and lives in [backend/schema/](backend/schema/):
+
+- `init/` builds a fresh database: [01_schema.sql](backend/schema/init/01_schema.sql) (core tables and the `channel_stats_enriched` view), [02_archive_and_switch_channels.sql](backend/schema/init/02_archive_and_switch_channels.sql) (`channel_stats_archive`, `videos_archive`, `view_timeseries_archive`: snapshots of rows before a channel-set rotation, mirroring the core tables plus `archive_id`/`archived_at`), [03_app_backend.sql](backend/schema/init/03_app_backend.sql) (`users`/`predictions`/`notifications`, see "App-layer tables" below) and [04_video_features.sql](backend/schema/init/04_video_features.sql) (cached title/thumbnail embeddings).
+- `migrations/` holds idempotent changes for a database that already exists: `002` video metadata columns, `003` the `notifications.type` CHECK constraint, `004` row-level security on every table. Each mirrors a change already made in `init/`, which stays the source of truth for a fresh database.
+
+Init scripts only auto-apply to a fresh local Postgres container. Against the live Supabase DB, apply them or a migration manually, e.g. `psql "$SUPABASE_DB_URL" -f backend/schema/migrations/004_enable_row_level_security.sql`.
+
+Every table has row-level security enabled with no policies, so Supabase's REST API (anon/authenticated keys) can read nothing. The backend connects directly as the database owner, which bypasses it. How the schema and data are tested, and how to check the live database, is in [backend/tests/DB_TESTING.md](backend/tests/DB_TESTING.md).
 
 ### Connection pattern
 
@@ -10,7 +17,7 @@ Schema is defined in [youtube-etl-pipeline/postgres/init/01_schema.sql](youtube-
 - ETL jobs connect with plain `psycopg2.connect(db_url)` — see [youtube_extractor/job2_timeseries_collector.py](youtube-etl-pipeline/youtube_extractor/job2_timeseries_collector.py) `main()`.
 - Bulk writes use `psycopg2.extras.execute_batch` with named-parameter SQL templates (`%(name)s`), followed by an explicit `conn.commit()`.
 - When writing to multiple tables that Job 1 (channel ingestion) also touches, rows are sorted deterministically by primary key (e.g. `video_id`) before the batch write to avoid Postgres deadlocks between concurrently running jobs.
-- A **new FastAPI backend is being built in `backend/`** that will read from this same Supabase database — reuse `SUPABASE_DB_URL` and the same connection pattern rather than introducing a second DB config convention.
+- The FastAPI backend in `backend/` uses **its own Supabase database**, separate from the one the data-collection pipeline wrote to. It reads `SUPABASE_DB_URL` from `backend/.env` and connects through [backend/db.py](backend/db.py): a `ThreadedConnectionPool` (FastAPI runs sync endpoints on threads) with a semaphore so bursts wait for a free connection instead of failing. That database holds the full schema above, including the pipeline tables that `/channels` and `/videos` read.
 
 ### Core tables
 
@@ -50,7 +57,7 @@ Added by `03_app_backend.sql`, owned by the FastAPI backend (not the ETL pipelin
 - `full_name`, `email` (unique), `password_hash` (bcrypt)
 - `subscribers`, `monthly_views` (`BIGINT`, self-reported baseline used as prediction context — editable in Settings, not scraped)
 - `channel_url` (pasted at signup), `channel_data` (`JSONB` snapshot fetched from the YouTube Data API — title, description, thumbnail_url, banner_url, country, published_at, subscriber_count, view_count, video_count, subscriber_hidden, channel_id, fetched_at), `channel_fetch_error`
-- Kept separate from `channel_stats`: that table is the ETL's tracked forecasting-dataset channels, not a per-user profile cache. If a user's resolved `channel_data.channel_id` happens to also exist in `channel_stats`, `/predictions` picks up real channel context for the model; otherwise it falls back to dataset-wide medians (see `backend/inference.py`'s `get_channel_stats`).
+- Kept separate from `channel_stats`: that table is the ETL's tracked forecasting-dataset channels, not a per-user profile cache. The forecast does not read `channel_stats`: `backend/inference.py` fetches the channel's recent history from the YouTube API using `channel_data.channel_id`, and `/predictions` returns 400 when the user has no linked channel. A failed channel refresh keeps the last good `channel_data` and only sets `channel_fetch_error`.
 
 **`predictions`** — one row per saved/run prediction (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
 - `title`, `category`, `tags` (`TEXT[]`), `target_date`, `target_time`, `thumbnail_path`/`dataset_path` (served from `/uploads`)
@@ -58,7 +65,7 @@ Added by `03_app_backend.sql`, owned by the FastAPI backend (not the ETL pipelin
 - `predicted_views`, `confidence` (heuristic, not a model output — see `backend/routers/predictions.py`), `change_vs_avg`, `trajectory` (`JSONB` curve), `v_inf`, `tau`, `used_channel_context`
 
 **`notifications`** — one row per in-app notification (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
-- `type` (`welcome` | `channel_fetch_success` | `channel_fetch_error` | `prediction_complete`), `title`, `message`, `read`
+- `type` (`welcome` | `channel_fetch_success` | `channel_fetch_error` | `prediction_complete`, enforced by the `chk_notifications_type` CHECK constraint), `title`, `message`, `read`
 
 ### Polling cadence (Job 2)
 

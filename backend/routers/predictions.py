@@ -17,7 +17,7 @@ from inference import (
 from models import PredictionOut
 from routers.notifications import create_notification
 from security import get_current_user
-from storage import save_upload
+from storage import delete_upload, save_upload
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -81,12 +81,25 @@ def row_to_prediction_out(row: dict) -> PredictionOut:
     )
 
 
-def _parse_scheduled_upload_time(target_date: str | None, target_time: str | None) -> datetime:
-    if not target_date:
+def _parse_schedule(target_date: str | None, target_time: str | None) -> tuple[date_cls | None, time | None]:
+    """Parses the optional target date/time form fields; malformed values are a 422."""
+    try:
+        parsed_date = date_cls.fromisoformat(target_date) if target_date else None
+        parsed_time = time.fromisoformat(target_time) if target_time else None
+        if target_time and len(target_time) > 8:  # predictions.target_time is VARCHAR(8)
+            raise ValueError("too long")
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="target_date must be YYYY-MM-DD and target_time must be HH:MM",
+        ) from None
+    return parsed_date, parsed_time
+
+
+def _scheduled_upload_time(parsed_date: date_cls | None, parsed_time: time | None) -> datetime:
+    if not parsed_date:
         return datetime.now(timezone.utc)
-    parsed_date = date_cls.fromisoformat(target_date)
-    parsed_time = time.fromisoformat(target_time) if target_time else time(0, 0)
-    return datetime.combine(parsed_date, parsed_time, tzinfo=timezone.utc)
+    return datetime.combine(parsed_date, parsed_time or time(0, 0), tzinfo=timezone.utc)
 
 
 def _read_limited(upload: UploadFile, max_bytes: int, label: str) -> bytes:
@@ -120,8 +133,9 @@ def create_prediction(
     if not is_draft and thumbnail is None:
         raise HTTPException(status_code=400, detail="A thumbnail is required to run a prediction")
 
+    parsed_date, parsed_time = _parse_schedule(target_date, target_time)
+
     thumbnail_bytes: bytes | None = None
-    thumbnail_path: str | None = None
     if thumbnail is not None:
         if thumbnail.content_type not in ALLOWED_IMAGE_TYPES:
             raise HTTPException(
@@ -129,23 +143,20 @@ def create_prediction(
                 detail=f"Unsupported thumbnail type '{thumbnail.content_type}'. Use JPEG, PNG or WebP.",
             )
         thumbnail_bytes = _read_limited(thumbnail, MAX_THUMBNAIL_BYTES, "Thumbnail")
-        thumbnail_path = save_upload(thumbnail_bytes, thumbnail.filename)
 
-    dataset_path = None
+    dataset_bytes: bytes | None = None
     if dataset is not None:
-        dataset_path = save_upload(
-            _read_limited(dataset, MAX_DATASET_BYTES, "Dataset"), dataset.filename
-        )
+        dataset_bytes = _read_limited(dataset, MAX_DATASET_BYTES, "Dataset")
 
     fields = {
         "user_id": user["id"],
         "title": title,
         "category": category,
         "tags": tag_list,
-        "target_date": date_cls.fromisoformat(target_date) if target_date else None,
+        "target_date": parsed_date,
         "target_time": target_time or None,
-        "thumbnail_path": thumbnail_path,
-        "dataset_path": dataset_path,
+        "thumbnail_path": None,  # files are saved only once the request is known to be valid
+        "dataset_path": None,
         "status": "draft" if is_draft else "complete",
         "predicted_views": None,
         "confidence": None,
@@ -164,7 +175,7 @@ def create_prediction(
                 status_code=400, detail=f"Thumbnail was not a valid image: {exc}"
             ) from exc
 
-        scheduled_upload_time = _parse_scheduled_upload_time(target_date, target_time)
+        scheduled_upload_time = _scheduled_upload_time(parsed_date, parsed_time)
         channel_data = user.get("channel_data") or {}
         channel_id = channel_data.get("channel_id")
 
@@ -229,9 +240,22 @@ def create_prediction(
             used_channel_context=bool(result["used_channel_context"]),
         )
 
-    with get_cursor(commit=True) as cur:
-        cur.execute(INSERT_SQL, fields)
-        prediction_id, created_at = cur.fetchone()
+    saved_paths: list[str] = []
+    try:
+        if thumbnail_bytes is not None:
+            fields["thumbnail_path"] = save_upload(thumbnail_bytes, thumbnail.filename)
+            saved_paths.append(fields["thumbnail_path"])
+        if dataset_bytes is not None:
+            fields["dataset_path"] = save_upload(dataset_bytes, dataset.filename)
+            saved_paths.append(fields["dataset_path"])
+
+        with get_cursor(commit=True) as cur:
+            cur.execute(INSERT_SQL, fields)
+            prediction_id, created_at = cur.fetchone()
+    except Exception:
+        for path in saved_paths:
+            delete_upload(path)
+        raise
 
     if not is_draft:
         try:

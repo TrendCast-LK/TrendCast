@@ -1,6 +1,6 @@
 -- =============================================================================
 -- PostgreSQL Schema Initialisation
--- File: postgres/init/01_schema.sql
+-- File: backend/schema/init/01_schema.sql
 -- Runs automatically on first container start (docker-entrypoint-initdb.d)
 -- =============================================================================
 
@@ -95,61 +95,6 @@ COMMENT ON COLUMN channel_stats.processed_at IS
     'UTC timestamp of the most recent successful API extraction. Used to detect stale records.';
 
 -- =============================================================================
--- VIEW: channel_stats_enriched
--- Pre-computes engagement KPIs for use in Jupyter and BI tools
--- =============================================================================
-CREATE OR REPLACE VIEW channel_stats_enriched AS
-SELECT
-    cs.channel_id,
-    cs.channel_title,
-    cs.channel_description,
-    cs.published_at,
-    cs.country,
-    cs.total_views,
-    cs.subscriber_count,
-    cs.video_count,
-    cs.processed_at,
-    cs.created_at,
-
-    -- Avg views per uploaded video (guarded against divide-by-zero)
-    CASE
-        WHEN cs.video_count > 0
-        THEN ROUND(cs.total_views::NUMERIC / cs.video_count, 2)
-        ELSE 0
-    END AS avg_views_per_video,
-
-    -- Views per subscriber (engagement depth metric)
-    CASE
-        WHEN cs.subscriber_count > 0
-        THEN ROUND(cs.total_views::NUMERIC / cs.subscriber_count, 4)
-        ELSE 0
-    END AS views_per_subscriber,
-
-    -- Engagement ratio: what proportion of viewers subscribed (%)
-    CASE
-        WHEN cs.total_views > 0
-        THEN ROUND((cs.subscriber_count::NUMERIC / cs.total_views) * 100, 6)
-        ELSE 0
-    END AS engagement_ratio,
-
-    -- Categorical channel tier based on subscriber count
-    CASE
-        WHEN cs.subscriber_count >= 1000000  THEN 'Mega (1M+)'
-        WHEN cs.subscriber_count >= 100000   THEN 'Large (100K–1M)'
-        WHEN cs.subscriber_count >= 10000    THEN 'Mid (10K–100K)'
-        WHEN cs.subscriber_count >= 1000     THEN 'Small (1K–10K)'
-        ELSE                                      'Micro (<1K)'
-    END AS size_tier,
-
-    -- Channel age in days since creation
-    EXTRACT(DAY FROM NOW() - cs.published_at)::INTEGER AS channel_age_days
-
-FROM channel_stats cs;
-
-COMMENT ON VIEW channel_stats_enriched IS
-    'Derived view exposing pre-computed engagement KPIs on top of channel_stats. Use in Jupyter notebooks and BI dashboards.';
-
--- =============================================================================
 -- INCREMENTAL SCHEMA EXTENSION FOR CHANNEL SEED LIST
 -- Adds only the new fields needed by the seed-list workflow to the existing
 -- channel_stats table used by the current pipeline.
@@ -218,13 +163,12 @@ ALTER TABLE videos
     ADD COLUMN IF NOT EXISTS duration        VARCHAR(32);
 
 -- =============================================================================
--- VIEW: channel_stats_enriched (redefinition)
--- Re-declares the view now that `videos` exists, adding tier_category — the
--- mode of category_id across the channel's videos. Must come after the
--- `videos` table since CREATE VIEW resolves referenced tables immediately;
--- the earlier definition above only exists so the view is available before
--- this point in a fresh init. View logic only — recomputes automatically as
--- new videos arrive. NULL for channels with no categorized videos.
+-- VIEW: channel_stats_enriched
+-- Pre-computes engagement KPIs for use in Jupyter and BI tools, plus
+-- tier_category — the mode of category_id across the channel's videos. Must
+-- come after the `videos` table since CREATE VIEW resolves referenced tables
+-- immediately. View logic only — recomputes automatically as new videos
+-- arrive. NULL for channels with no categorized videos.
 -- =============================================================================
 CREATE OR REPLACE VIEW channel_stats_enriched AS
 SELECT
@@ -315,3 +259,11 @@ CREATE INDEX IF NOT EXISTS idx_view_timeseries_video_scraped
 
 CREATE INDEX IF NOT EXISTS idx_view_timeseries_scraped_at
     ON view_timeseries (scraped_at DESC);
+
+-- Row-level security. Supabase exposes every public-schema table through its REST
+-- API to the anon/authenticated keys unless RLS is on; with RLS on and no
+-- policies those roles see nothing. The backend and scripts connect directly as
+-- the database owner (bypasses RLS), so they are unaffected.
+ALTER TABLE channel_stats   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE videos          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE view_timeseries ENABLE ROW LEVEL SECURITY;

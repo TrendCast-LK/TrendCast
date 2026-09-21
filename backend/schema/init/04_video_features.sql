@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Video Features Migration
--- File: postgres/init/04_video_features.sql
+-- File: backend/schema/init/04_video_features.sql
 -- Purpose: Caches per-video title/thumbnail embeddings so weekly model
 --          retraining doesn't have to re-embed every video from scratch.
 --          Populated by youtube_extractor/embed_new_videos.py, which reuses

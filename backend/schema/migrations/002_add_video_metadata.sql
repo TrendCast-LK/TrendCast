@@ -1,9 +1,9 @@
 -- =============================================================================
 -- Migration: Add video metadata columns + derived tier_category view field
--- File: postgres/migrations/002_add_video_metadata.sql
+-- File: backend/schema/migrations/002_add_video_metadata.sql
 -- Run manually against the live Supabase database (idempotent — safe to
 -- re-run). Mirrors the equivalent block already added to
--- postgres/init/01_schema.sql, which remains the source of truth for a
+-- backend/schema/init/01_schema.sql, which remains the source of truth for a
 -- fresh DB init.
 -- =============================================================================
 
