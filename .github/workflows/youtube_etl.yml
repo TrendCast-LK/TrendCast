@@ -1,11 +1,18 @@
 name: YouTube ETL Pipeline
 
 on:
-  schedule:
-    # Job 1 — Channel Ingestion: twice daily at minute 17 (avoiding top of the hour queue spikes)
-    - cron: '17 */12 * * *'
-    # Job 2 — Timeseries Collector: every 5 minutes (offset by 2 to avoid top-of-hour spikes)
-    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
+  # Schedule disabled 2026-09-24: this pipeline writes to a Supabase project
+  # that has hit its free-tier quota and is being retired. Job 2 alone was
+  # firing every 5 minutes and, combined with Job 1's every-15-minute
+  # sibling in trendcast-githubactions, exhausted the shared YouTube API key
+  # pool. Superseded by TrendCast-LK/trendcast-githubactions. workflow_dispatch
+  # kept so this can still be run by hand if ever needed. Re-enable the
+  # schedule below only if this pipeline is intentionally revived.
+  # schedule:
+  #   # Job 1 — Channel Ingestion: twice daily at minute 17 (avoiding top of the hour queue spikes)
+  #   - cron: '17 */12 * * *'
+  #   # Job 2 — Timeseries Collector: every 5 minutes (offset by 2 to avoid top-of-hour spikes)
+  #   - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   workflow_dispatch:
     inputs:
       job:
