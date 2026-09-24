@@ -13,6 +13,12 @@ def ensure_uploads_dir() -> None:
     UPLOADS_DIR.mkdir(exist_ok=True)
 
 
+def delete_upload(served_path: str | None) -> None:
+    """Removes a file previously returned by save_upload (no-op if missing)."""
+    if served_path:
+        (UPLOADS_DIR / Path(served_path).name).unlink(missing_ok=True)
+
+
 def save_upload(data: bytes, original_filename: str | None) -> str:
     """Saves file bytes under a random name (keeping the original extension)
     and returns the path it's served at, e.g. "/uploads/<uuid>.jpg"."""

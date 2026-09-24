@@ -58,10 +58,11 @@ keep it lightweight. Install those separately, or reuse `ml/requirements.txt`.
   run in CI) for videos ingested before metadata columns existed
 - `youtube_extractor/trigger_collector.py` — triggers Job 2 on GitHub
   Actions through the API, without waiting for the schedule
-- `postgres/init/*.sql` — the database schema, applied automatically on a
-  fresh local Postgres container. On the real Supabase database, apply new
-  migration files by hand: `psql "$SUPABASE_DB_URL" -f postgres/init/0X_....sql`.
-  Full table reference: [../CLAUDE.md](../CLAUDE.md).
+- The database schema now lives with the backend in
+  [../backend/schema/](../backend/schema/) (`init/` for a fresh database,
+  `migrations/` for changes to an existing one). This folder's local Postgres
+  container mounts `../backend/schema/init`, so it still initialises itself on
+  first boot. Full table reference: [../CLAUDE.md](../CLAUDE.md).
 
 ## Test it's working
 

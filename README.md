@@ -83,12 +83,12 @@ large *training* data is left out (see [Training data](#training-data-not-in-the
 
 ### 1. Set up the database
 
-Apply the SQL files in [youtube-etl-pipeline/postgres/init/](youtube-etl-pipeline/postgres/init/)
+Apply the SQL files in [backend/schema/init/](backend/schema/init/)
 in order (`01` → `04`). `03_app_backend.sql` creates the `users`, `predictions`
 and `notifications` tables the app needs.
 
 ```bash
-for f in youtube-etl-pipeline/postgres/init/0*.sql; do psql "$SUPABASE_DB_URL" -f "$f"; done
+for f in backend/schema/init/0*.sql; do psql "$SUPABASE_DB_URL" -f "$f"; done
 ```
 
 (Without `psql`, paste each file into the Supabase SQL editor.)

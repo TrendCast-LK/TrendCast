@@ -1,0 +1,3 @@
+# Extra packages for the load-test kit (the backend's own requirements.txt is also needed).
+locust>=2.29
+psutil
