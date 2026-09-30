@@ -4,7 +4,8 @@ import Chart from "chart.js/auto";
 import Sidebar from "../components/Sidebar";
 import ResultsTopbar from "../components/ResultsTopbar";
 import * as api from "../lib/api";
-import { formatCompact, formatSignedPercent } from "../lib/format";
+import { formatCompact, formatSignedPercent, formatThousands, modelLabel } from "../lib/format";
+import { downloadPredictionReport } from "../lib/report";
 import { chartColors } from "../lib/chartTheme";
 import { useTheme } from "../context/ThemeContext";
 
@@ -98,10 +99,7 @@ export default function PredictionResult() {
                 let label = context.dataset.label || "";
                 if (label) label += ": ";
                 if (context.parsed.y !== null) {
-                  label += new Intl.NumberFormat("en-US", {
-                    notation: "compact",
-                    compactDisplay: "short",
-                  }).format(context.parsed.y);
+                  label += Math.round(context.parsed.y).toLocaleString("en-US");
                 }
                 return label;
               },
@@ -112,10 +110,16 @@ export default function PredictionResult() {
           y: {
             beginAtZero: true,
             grid: { color: colors.grid, drawBorder: false },
+            title: {
+              display: true,
+              text: "Views (thousands)",
+              font: { family: "Geist", size: 12 },
+              color: colors.tick,
+            },
             ticks: {
               font: { family: "Geist", size: 12 },
               color: colors.tick,
-              callback: (value) => (value === 0 ? "0" : `${(value / 1000000).toFixed(1)}M`),
+              callback: formatThousands,
             },
           },
           x: {
@@ -153,6 +157,7 @@ export default function PredictionResult() {
   }
 
   const changeIcon = (prediction.change_vs_avg ?? 0) >= 0 ? "trending_up" : "trending_down";
+  const model = modelLabel(prediction);
 
   return (
     <div className="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-screen">
@@ -170,7 +175,11 @@ export default function PredictionResult() {
             </h2>
           </div>
           <div className="flex gap-3 w-full md:w-auto">
-            <button className="flex-1 md:flex-none px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
+            <button
+              onClick={() => downloadPredictionReport(prediction)}
+              disabled={prediction.status !== "complete"}
+              title={prediction.status !== "complete" ? "Drafts have no forecast to export" : undefined}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex-1 md:flex-none px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
               <span className="material-symbols-outlined text-sm">download</span> Export Report
             </button>
             <button
@@ -215,6 +224,21 @@ export default function PredictionResult() {
                 Predicted with {Math.round((prediction.confidence ?? 0) * 100)}% confidence
                 {prediction.target_date ? ` · targeting ${prediction.target_date}` : ""}
               </p>
+              {model && (
+                <p
+                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm"
+                  title={
+                    prediction.used_channel_context
+                      ? "Blended with a model that compares this video to your channel's recent uploads."
+                      : "Your channel's recent uploads are still being processed, so this forecast used the base model only. New predictions will use the full ensemble once that finishes."
+                  }
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    {prediction.used_channel_context ? "hub" : "hourglass_top"}
+                  </span>
+                  {model}
+                </p>
+              )}
             </div>
             <div className="border-t border-outline-variant/30 pt-6 mt-auto">
               <p className="font-label-md text-label-md text-on-surface-variant mb-1">7-Day View Forecast</p>
