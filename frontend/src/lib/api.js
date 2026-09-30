@@ -118,6 +118,10 @@ export function refreshChannel() {
   return request("/channel/refresh", { method: "POST" });
 }
 
+export function changeChannel(channelUrl) {
+  return request("/channel", { method: "PUT", json: { channel_url: channelUrl } });
+}
+
 // ---- Notifications ------------------------------------------------------------
 
 export function listNotifications() {

@@ -657,3 +657,63 @@ def test_catboost_only_fallback_is_stored_as_no_channel_context(api):
     assert post_prediction(api, headers).status_code == 200
     assert rows(api, "SELECT used_channel_context FROM predictions") == [(False,)]
 
+
+# ---------------------------------------------------------------------------
+# Changing the linked channel
+# ---------------------------------------------------------------------------
+
+OTHER_CHANNEL = {**CHANNEL, "channel_id": "UCother999", "title": "Other Channel", "subscriber_count": 777}
+
+
+def change_channel(api, headers, channel_url="https://youtube.com/@other"):
+    return api.client.put("/channel", json={"channel_url": channel_url}, headers=headers)
+
+
+def test_change_channel_switches_url_snapshot_and_subscribers(api):
+    user_id, headers = make_user(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    response = change_channel(api, headers, "  https://youtube.com/@other  ")
+    assert response.status_code == 200, response.text
+    assert response.json()["channel_id"] == "UCother999" and response.json()["fetch_error"] is None
+    (url, data, error, subs), = rows(
+        api, "SELECT channel_url, channel_data, channel_fetch_error, subscribers FROM users WHERE id=%s", (user_id,))
+    assert (url, data["channel_id"], error, subs) == ("https://youtube.com/@other", "UCother999", None, 777)
+    assert ("Channel changed",) in rows(api, "SELECT title FROM notifications WHERE user_id=%s", (user_id,))
+
+
+def test_change_channel_warms_the_new_channels_history(api):
+    _, headers = make_user(api)
+    warmed = record_warms(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    assert change_channel(api, headers).status_code == 200
+    assert warmed == ["UCother999"]
+
+
+def test_predictions_use_the_new_channel_after_a_change(api):
+    _, headers = make_user(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    assert change_channel(api, headers).status_code == 200
+    calls = fake_forecast(api)
+    assert post_prediction(api, headers).status_code == 200
+    assert calls[0]["channel_id"] == "UCother999"
+
+
+def test_an_unresolvable_channel_is_rejected_and_the_old_one_kept(api):
+    user_id, headers = make_user(api)
+    before = rows(api, "SELECT channel_url, channel_data, subscribers FROM users WHERE id=%s", (user_id,))
+    warmed = record_warms(api)
+    fail_youtube(api)
+    response = change_channel(api, headers, "https://youtube.com/@typo")
+    assert response.status_code == 400 and "Couldn't use that channel" in response.json()["detail"]
+    assert rows(api, "SELECT channel_url, channel_data, subscribers FROM users WHERE id=%s", (user_id,)) == before
+    assert warmed == []
+
+
+@pytest.mark.parametrize("body", [{}, {"channel_url": ""}])
+def test_change_channel_requires_a_url(api, body):
+    _, headers = make_user(api)
+    assert api.client.put("/channel", json=body, headers=headers).status_code == 422
+
+
+def test_change_channel_requires_login(api):
+    assert api.client.put("/channel", json={"channel_url": "https://youtube.com/@x"}).status_code == 401

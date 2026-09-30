@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+import { useAuth } from "../context/AuthContext";
 import * as api from "../lib/api";
 import { ApiError } from "../lib/api";
 import { formatCompact } from "../lib/format";
@@ -10,6 +11,24 @@ export default function Channel() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [changing, setChanging] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const { setUserData } = useAuth();
+
+  async function handleChanged(updated) {
+    setChannel(updated);
+    setChanging(false);
+    setError(null);
+    setNotice(
+      `Now using ${updated.title || "your new channel"}. Its recent uploads are being processed, ` +
+        "so your next prediction or two may use the base model only.",
+    );
+    try {
+      setUserData(await api.me()); // avatar + channel URL elsewhere in the app
+    } catch {
+      // the change is saved; a stale avatar until next load is harmless
+    }
+  }
 
   function load() {
     setLoading(true);
@@ -53,6 +72,19 @@ export default function Channel() {
             </p>
             <h2 className="font-headline-lg text-headline-lg text-on-background">Channel Data</h2>
           </div>
+          <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setChanging(true);
+              setNotice(null);
+            }}
+            disabled={loading || changing}
+            className="px-5 py-2.5 rounded-xl font-label-md text-label-md bg-surface-container text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">swap_horiz</span>
+            Change channel
+          </button>
           <button
             type="button"
             onClick={handleRefresh}
@@ -64,7 +96,23 @@ export default function Channel() {
             </span>
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
+          </div>
         </div>
+
+        {changing && (
+          <ChangeChannelForm
+            currentUrl={channel?.channel_url}
+            onChanged={handleChanged}
+            onCancel={() => setChanging(false)}
+          />
+        )}
+
+        {notice && !changing && (
+          <div className="rounded-lg bg-primary-container/20 text-on-surface px-4 py-3 font-body-md text-body-md text-sm flex items-start gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+            {notice}
+          </div>
+        )}
 
         {loading && (
           <div className="flex items-center justify-center py-24">
@@ -90,14 +138,24 @@ export default function Channel() {
               {channel.fetch_error || "Something went wrong fetching your channel data."}
             </p>
             <p className="font-label-sm text-label-sm text-outline">{channel.channel_url}</p>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="mt-2 bg-primary text-white px-5 py-2.5 rounded-full font-label-md text-label-md disabled:opacity-60"
-            >
-              Try again
-            </button>
+            <div className="mt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-primary text-white px-5 py-2.5 rounded-full font-label-md text-label-md disabled:opacity-60"
+              >
+                Try again
+              </button>
+              <button
+                type="button"
+                onClick={() => setChanging(true)}
+                disabled={changing}
+                className="px-5 py-2.5 rounded-full font-label-md text-label-md bg-surface-container text-on-surface hover:bg-surface-container-highest disabled:opacity-60"
+              >
+                Use a different channel
+              </button>
+            </div>
           </div>
         )}
 
@@ -189,6 +247,80 @@ export default function Channel() {
         )}
       </main>
     </div>
+  );
+}
+
+function ChangeChannelForm({ currentUrl, onChanged, onCancel }) {
+  const [url, setUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      onChanged(await api.changeChannel(url.trim()));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't change the channel. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="glass-panel p-6 md:p-8 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+      <h3 className="font-headline-md text-headline-md text-on-background mb-2">Change channel</h3>
+      <p className="font-body-md text-body-md text-on-surface-variant mb-6">
+        Forecasts are based on your channel's recent uploads. Past predictions keep the numbers they
+        were made with.
+        {currentUrl && (
+          <>
+            {" "}Currently: <span className="text-on-surface break-all">{currentUrl}</span>
+          </>
+        )}
+      </p>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {error && (
+          <div className="rounded-lg bg-error-container/60 text-on-error-container px-4 py-3 font-body-md text-body-md text-sm">
+            {error}
+          </div>
+        )}
+        <div>
+          <label htmlFor="channel-url" className="block font-label-md text-label-md text-on-surface-variant mb-2">
+            New channel URL or handle
+          </label>
+          <input
+            id="channel-url"
+            className="input-field font-body-md text-body-md text-on-surface"
+            type="text"
+            placeholder="https://www.youtube.com/@yourchannel"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            autoFocus
+            required
+          />
+        </div>
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="px-5 py-2.5 rounded-xl font-label-md text-label-md bg-surface-container text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !url.trim()}
+            className="btn-primary px-6 py-2.5 rounded-xl font-label-md text-label-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {saving && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
+            {saving ? "Checking channel…" : "Change channel"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }
 
