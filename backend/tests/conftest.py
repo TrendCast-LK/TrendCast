@@ -34,6 +34,7 @@ INIT_SCRIPTS = sorted((SCHEMA_DIR / "init").glob("0*.sql"))
 MIGRATION_002 = SCHEMA_DIR / "migrations" / "002_add_video_metadata.sql"
 MIGRATION_003 = SCHEMA_DIR / "migrations" / "003_notifications_type_check.sql"
 MIGRATION_004 = SCHEMA_DIR / "migrations" / "004_enable_row_level_security.sql"
+MIGRATION_005 = SCHEMA_DIR / "migrations" / "005_channel_history_cache.sql"
 
 # Importable helpers that live in backend/ (tools.*); config.py is only imported by the `backend` fixture.
 sys.path.insert(0, str(BACKEND_DIR))
@@ -209,6 +210,7 @@ def backend(pg_server):
     os.environ.update(overrides)
     sys.modules["inference"] = _stub_inference_module()
 
+    import channel_cache
     import config
     import db
     from routers import auth, channel, dashboard, notifications, predictions, trends
@@ -224,7 +226,7 @@ def backend(pg_server):
         app.include_router(module.router)
 
     yield SimpleNamespace(
-        app=app, db=db, storage=storage, inference=sys.modules["inference"],
+        app=app, db=db, storage=storage, inference=sys.modules["inference"], channel_cache=channel_cache,
         channel_router=channel, predictions_router=predictions,
     )
 

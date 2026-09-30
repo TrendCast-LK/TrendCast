@@ -119,6 +119,10 @@ class AuthResponse(BaseModel):
 # ---- Channel ----------------------------------------------------------------
 
 
+class ChangeChannelRequest(BaseModel):
+    channel_url: str = Field(min_length=1)
+
+
 class ChannelOut(BaseModel):
     channel_id: Optional[str] = None
     title: Optional[str] = None

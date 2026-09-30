@@ -6,7 +6,9 @@ in `init/`, which stays the source of truth).
 
 ```
 init/        01_schema.sql   02_archive_and_switch_channels.sql   03_app_backend.sql   04_video_features.sql
+             05_channel_history_cache.sql
 migrations/  002_add_video_metadata.sql   003_notifications_type_check.sql   004_enable_row_level_security.sql
+             005_channel_history_cache.sql
 ```
 
 Apply to a fresh database (needs the `vector` and `uuid-ossp` extensions):

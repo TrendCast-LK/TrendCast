@@ -592,3 +592,128 @@ def test_confidence_is_higher_for_a_narrower_band(band):
 @pytest.mark.parametrize("width", [0.001, 1, 2, 4, 1_000_000])
 def test_confidence_stays_within_bounds(band, width):
     assert 0.05 <= band(1000, 1000, 1000 + width * 1000) <= 0.95
+
+
+# ---------------------------------------------------------------------------
+# Forecast ensemble: channel history cache warming
+# ---------------------------------------------------------------------------
+
+def record_warms(api):
+    """Replaces the background warm with a recorder; returns the recorded channel ids."""
+    warmed = []
+    api.monkeypatch.setattr(api.backend.channel_cache, "warm_channel_history", warmed.append)
+    return warmed
+
+
+def test_signup_warms_the_channel_history_cache_in_the_background(api):
+    warmed = record_warms(api)
+    assert signup(api).status_code == 200
+    assert warmed == [CHANNEL["channel_id"]]  # TestClient runs background tasks after the response
+
+
+def test_signup_with_an_unresolvable_channel_does_not_warm(api):
+    warmed = record_warms(api)
+    fail_youtube(api)
+    assert signup(api).status_code == 200
+    assert warmed == []
+
+
+def test_signup_does_not_wait_for_or_fail_on_the_warm(api):
+    def slow_failing_warm(channel_id):
+        raise RuntimeError("encoder exploded")
+
+    api.monkeypatch.setattr(api.backend.channel_cache, "warm_channel_history", slow_failing_warm)
+    response = signup(api)
+    assert response.status_code == 200 and response.json()["access_token"]
+
+
+def test_channel_refresh_warms_the_channel_history_cache(api):
+    _, headers = make_user(api)
+    warmed = record_warms(api)
+    assert api.client.post("/channel/refresh", headers=headers).status_code == 200
+    assert warmed == [CHANNEL["channel_id"]]
+
+
+def test_prediction_reads_the_history_cache_and_a_miss_warms_it_after_the_response(api):
+    _, headers = make_user(api)
+    warmed = record_warms(api)
+    calls = []
+
+    def _cache_miss(state, **kwargs):
+        calls.append(kwargs)
+        kwargs["schedule_warm"](kwargs["channel_id"])  # what inference does on a miss
+        return {**FORECAST, "used_channel_context": False}
+
+    api.monkeypatch.setattr(api.backend.predictions_router, "run_forecast_on_image", _cache_miss)
+    assert post_prediction(api, headers).status_code == 200
+    assert calls[0]["history_loader"] is api.backend.channel_cache.load_history
+    assert warmed == [CHANNEL["channel_id"]]
+    assert rows(api, "SELECT used_channel_context FROM predictions") == [(False,)]
+
+
+def test_catboost_only_fallback_is_stored_as_no_channel_context(api):
+    _, headers = make_user(api)
+    fake_forecast(api, result={**FORECAST, "used_channel_context": False})
+    assert post_prediction(api, headers).status_code == 200
+    assert rows(api, "SELECT used_channel_context FROM predictions") == [(False,)]
+
+
+# ---------------------------------------------------------------------------
+# Changing the linked channel
+# ---------------------------------------------------------------------------
+
+OTHER_CHANNEL = {**CHANNEL, "channel_id": "UCother999", "title": "Other Channel", "subscriber_count": 777}
+
+
+def change_channel(api, headers, channel_url="https://youtube.com/@other"):
+    return api.client.put("/channel", json={"channel_url": channel_url}, headers=headers)
+
+
+def test_change_channel_switches_url_snapshot_and_subscribers(api):
+    user_id, headers = make_user(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    response = change_channel(api, headers, "  https://youtube.com/@other  ")
+    assert response.status_code == 200, response.text
+    assert response.json()["channel_id"] == "UCother999" and response.json()["fetch_error"] is None
+    (url, data, error, subs), = rows(
+        api, "SELECT channel_url, channel_data, channel_fetch_error, subscribers FROM users WHERE id=%s", (user_id,))
+    assert (url, data["channel_id"], error, subs) == ("https://youtube.com/@other", "UCother999", None, 777)
+    assert ("Channel changed",) in rows(api, "SELECT title FROM notifications WHERE user_id=%s", (user_id,))
+
+
+def test_change_channel_warms_the_new_channels_history(api):
+    _, headers = make_user(api)
+    warmed = record_warms(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    assert change_channel(api, headers).status_code == 200
+    assert warmed == ["UCother999"]
+
+
+def test_predictions_use_the_new_channel_after_a_change(api):
+    _, headers = make_user(api)
+    api.monkeypatch.setattr(api.backend.channel_router, "resolve_channel", lambda url: dict(OTHER_CHANNEL))
+    assert change_channel(api, headers).status_code == 200
+    calls = fake_forecast(api)
+    assert post_prediction(api, headers).status_code == 200
+    assert calls[0]["channel_id"] == "UCother999"
+
+
+def test_an_unresolvable_channel_is_rejected_and_the_old_one_kept(api):
+    user_id, headers = make_user(api)
+    before = rows(api, "SELECT channel_url, channel_data, subscribers FROM users WHERE id=%s", (user_id,))
+    warmed = record_warms(api)
+    fail_youtube(api)
+    response = change_channel(api, headers, "https://youtube.com/@typo")
+    assert response.status_code == 400 and "Couldn't use that channel" in response.json()["detail"]
+    assert rows(api, "SELECT channel_url, channel_data, subscribers FROM users WHERE id=%s", (user_id,)) == before
+    assert warmed == []
+
+
+@pytest.mark.parametrize("body", [{}, {"channel_url": ""}])
+def test_change_channel_requires_a_url(api, body):
+    _, headers = make_user(api)
+    assert api.client.put("/channel", json=body, headers=headers).status_code == 422
+
+
+def test_change_channel_requires_login(api):
+    assert api.client.put("/channel", json={"channel_url": "https://youtube.com/@x"}).status_code == 401

@@ -1,10 +1,12 @@
+import logging
 from contextlib import asynccontextmanager
 from typing import List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+import channel_cache
 from db import get_cursor
 from inference import ThumbnailDownloadError, get_state, load_artifacts, run_forecast
 from models import (
@@ -16,6 +18,12 @@ from models import (
 )
 from routers import auth, channel, dashboard, notifications, predictions, trends
 from storage import UPLOADS_DIR, ensure_uploads_dir
+
+
+# INFO so the per-stage forecast_timing / channel_warm lines are visible
+# (uvicorn configures only its own loggers).
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per Hugging Face / API request otherwise
 
 
 @asynccontextmanager
@@ -138,7 +146,7 @@ def forecast_health():
 
 
 @app.post("/forecast", response_model=ForecastResponse)
-def forecast(request: ForecastRequest):
+def forecast(request: ForecastRequest, background_tasks: BackgroundTasks):
     state = get_state()
     if not state.ready:
         raise HTTPException(
@@ -153,6 +161,8 @@ def forecast(request: ForecastRequest):
             thumbnail_url=request.thumbnail_url,
             scheduled_upload_time=request.scheduled_upload_time,
             channel_id=request.channel_id,
+            history_loader=channel_cache.load_history,
+            schedule_warm=lambda cid: channel_cache.schedule_warm(background_tasks, cid),
         )
     except ThumbnailDownloadError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

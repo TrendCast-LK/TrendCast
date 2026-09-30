@@ -2,10 +2,11 @@ import io
 from datetime import date as date_cls
 from datetime import datetime, time, timezone
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image
 from psycopg2.extras import Json
 
+import channel_cache
 from db import get_cursor
 from inference import (
     ChannelNotFoundError,
@@ -114,6 +115,7 @@ def _read_limited(upload: UploadFile, max_bytes: int, label: str) -> bytes:
 
 @router.post("", response_model=PredictionOut)
 def create_prediction(
+    background_tasks: BackgroundTasks,
     user: dict = Depends(get_current_user),
     title: str = Form(...),
     category: str | None = Form(None),
@@ -197,6 +199,11 @@ def create_prediction(
                 duration=duration,
                 description=description,
                 category_id=category_id,
+                # Cache-first channel history for HistAttnV2. A miss or stale
+                # entry re-warms in the background and, on a miss, this
+                # forecast is CatBoost-only (used_channel_context=False).
+                history_loader=channel_cache.load_history,
+                schedule_warm=lambda cid: channel_cache.schedule_warm(background_tasks, cid),
             )
         except InsufficientHistoryError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc

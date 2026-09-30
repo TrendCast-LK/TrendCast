@@ -1,5 +1,5 @@
 import psycopg2
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from db import get_cursor
@@ -48,7 +48,7 @@ def user_out(user: dict) -> UserOut:
 
 
 @router.post("/signup", response_model=AuthResponse)
-def signup(request: SignupRequest):
+def signup(request: SignupRequest, background_tasks: BackgroundTasks):
     with get_cursor(commit=True) as cur:
         try:
             cur.execute(
@@ -71,7 +71,9 @@ def signup(request: SignupRequest):
         "Your account is ready — try running your first prediction.",
     )
 
-    channel_data, _fetch_error = refresh_user_channel(user_id, request.channel_url)
+    # Also queues the forecast's channel history warm; it runs after this
+    # response is sent, so signup never waits on thumbnail encoding.
+    channel_data, _fetch_error = refresh_user_channel(user_id, request.channel_url, background_tasks)
     if channel_data and channel_data.get("subscriber_count") is not None:
         with get_cursor(commit=True) as cur:
             cur.execute(UPDATE_SUBSCRIBERS_SQL, {"subscribers": channel_data["subscriber_count"], "id": user_id})

@@ -26,6 +26,8 @@ artifacts/catboost_info/
 artifacts/.ipynb_checkpoints/
 artifacts/*.ipynb
 artifacts/.claude/
+# CatBoost training logs written next to the ensemble export
+ensemble_artifacts/catboost_info/
 
 # Logs
 *.log
