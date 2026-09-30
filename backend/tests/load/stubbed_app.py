@@ -89,7 +89,7 @@ def _fake_channel_snapshot(channel_url: str) -> dict:
     }
 
 
-def _fake_history(channel_id: str) -> list[dict]:
+def _fake_history(channel_id: str, **_kwargs) -> list[dict]:
     _spend(STUB_YOUTUBE_MS * 3)  # the real call is three requests
     now = datetime.now(timezone.utc)
     return [

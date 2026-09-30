@@ -34,9 +34,10 @@ uvicorn main:app --reload
 
 Serves on `http://127.0.0.1:8000`.
 
-**Startup is slow — about 25 seconds.** On boot, the app loads six CatBoost
-models, two CLIP embedding models (text and image), two PCA reducers, and
-the maturation curve from `artifacts/` (see `inference.py`'s
+**Startup is slow — about 30 seconds.** On boot, the app loads six CatBoost
+models, the HistAttnV2 network and its scaler, two CLIP embedding models (text
+and image), two PCA reducers, and the maturation curve from
+`../ensemble_artifacts/` (see `inference.py`'s
 `load_artifacts()`, called once at startup). `/forecast` and `/predictions`
 will 503 until that finishes. Check `GET /forecast/health` to see when
 it's ready.
@@ -46,7 +47,9 @@ it's ready.
 | File | What it does |
 | --- | --- |
 | `main.py` | App setup, CORS, `/health`, `/channels`, `/videos/{id}/timeseries`, `/forecast` |
-| `inference.py` | Loads CatBoost models and CLIP embeddings from `../artifacts/`, caches channel history per channel (6h TTL), builds feature vectors in exact order, and runs forecasts with uncertainty ranges. |
+| `inference.py` | Loads the CatBoost + HistAttnV2 ensemble from `../ensemble_artifacts/`, encodes the target video once (raw CLIP-512 for HistAttnV2, PCA-32 for CatBoost), blends the two `log(m)` predictions with `ensemble_weight`, and logs per-stage timings (`forecast_timing`). |
+| `histattn.py` | The HistAttnV2 model class (matches `histattn_v2.pt` key for key) and its history-feature builders |
+| `channel_cache.py` | The channel history cache HistAttnV2 reads: background warming at signup / channel refresh, cache-first reads, CatBoost-only fallback on a miss |
 | `db.py` | Postgres connection pool (`psycopg2`) |
 | `config.py` | Reads and validates env vars |
 | `security.py` | Password hashing, JWT issue/verify, `get_current_user` dependency |
@@ -95,8 +98,11 @@ running it and hitting endpoints by hand (or through the frontend).
 
 ## Forecast accuracy
 
-Validation against the exported reference set (20 held-out training rows)
-shows a mean relative error of **0.24%** on the 7-day magnitude estimate.
+`tests/test_ensemble_artifacts.py` loads the exported artifacts and replays the
+export scripts' reference cases through the serving code: CatBoost matches
+`reference_predictions.json` to 1e-6, HistAttnV2 matches
+`histattn_reference_predictions.json` to 1e-4, and the blend matches the
+reference ensemble values. It needs the training corpus in `../artifacts/`.
 The response includes a `range_7d` with low/high bounds (computed from
 `residual_std` in `config.json`) for uncertainty visualization.
 
@@ -108,3 +114,8 @@ The response includes a `range_7d` with low/high bounds (computed from
 - **No admin/monitoring page.** There's no backend support for one either.
 - **YouTube API quota.** Fetching channel history on each forecast costs quota.
   The service caches per channel for 6 hours to mitigate this.
+- **First forecast after signup is CatBoost-only.** The channel history cache
+  warms in the background; until it lands, forecasts skip HistAttnV2 and store
+  `used_channel_context = false`.
+- **The uncertainty band uses CatBoost's residual spread.** No residual_std was
+  exported for the ensemble, so `range_7d` is CatBoost's, even when blended.

@@ -8,7 +8,7 @@ the core tables.
 import pytest
 
 import db_helpers as h
-from conftest import INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, apply_sql
+from conftest import INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005, apply_sql
 
 BIG, TXT, TS = "bigint", "text", "timestamp with time zone"
 
@@ -100,6 +100,23 @@ EXPECTED_COLUMNS = {
         "thumbnail_embedding": "vector(512)",
         "computed_at": TS,
     },
+    "channel_history_cache": {
+        "channel_id": "character varying(64)",
+        "encoder": TXT,
+        "warmed_at": TS,
+        "last_error": TXT,
+        "updated_at": TS,
+    },
+    "channel_history_videos": {
+        "channel_id": "character varying(64)",
+        "video_id": "character varying(64)",
+        "published_at": TS,
+        "view_count": BIG,
+        "duration_s": "double precision",
+        "text_embedding": "real[]",
+        "image_embedding": "real[]",
+        "encoded_at": TS,
+    },
 }
 
 EXPECTED_INDEXES = {
@@ -120,6 +137,9 @@ EXPECTED_CONSTRAINTS = {
     "chk_users_subscribers_positive", "chk_users_monthly_views_positive",
     "fk_predictions_user", "chk_predictions_status", "fk_notifications_user",
     "fk_video_features_video", "chk_notifications_type",
+    "pk_channel_history_videos", "fk_channel_history_videos_channel",
+    "chk_channel_history_videos_view_count", "chk_channel_history_videos_text_dim",
+    "chk_channel_history_videos_image_dim",
 }
 
 VIEW_COLUMNS = {
@@ -138,7 +158,7 @@ ARCHIVE_TABLES = ["channel_stats_archive", "videos_archive", "view_timeseries_ar
 # ---------------------------------------------------------------------------
 
 def test_init_scripts_are_discovered():
-    assert [p.name[:2] for p in INIT_SCRIPTS] == ["01", "02", "03", "04"]
+    assert [p.name[:2] for p in INIT_SCRIPTS] == ["01", "02", "03", "04", "05"]
 
 
 def test_fresh_build_applies_scripts_in_order(create_database):
@@ -218,7 +238,7 @@ def _seed_all_tables(cur):
 
 DATA_TABLES = ["channel_stats", "videos", "view_timeseries", "users", "predictions", "notifications"]
 
-RERUN_SCRIPTS = [pytest.param(p, id=p.name) for p in [*INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004]]
+RERUN_SCRIPTS = [pytest.param(p, id=p.name) for p in [*INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005]]
 
 
 @pytest.mark.parametrize("script", RERUN_SCRIPTS)
@@ -321,6 +341,17 @@ def test_migration_004_enables_row_level_security_on_a_legacy_db(cur, create_dat
     with legacy.cursor() as lcur:
         assert h.schema_fingerprint(lcur) != h.schema_fingerprint(cur)  # the damage is visible
     apply_sql(legacy, MIGRATION_004)
+    with legacy.cursor() as lcur:
+        assert h.schema_fingerprint(lcur) == h.schema_fingerprint(cur)
+
+
+def test_migration_005_adds_the_channel_history_cache_to_a_legacy_db(cur, create_database):
+    """A database created before the forecast ensemble, plus 005, equals a fresh build."""
+    legacy = create_database()
+    with legacy.cursor() as lcur:
+        lcur.execute("DROP TABLE channel_history_videos, channel_history_cache")
+    legacy.commit()
+    apply_sql(legacy, MIGRATION_005)
     with legacy.cursor() as lcur:
         assert h.schema_fingerprint(lcur) == h.schema_fingerprint(cur)
 

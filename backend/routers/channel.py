@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from psycopg2.extras import Json
 
+from channel_cache import schedule_warm
 from db import get_cursor
 from models import ChannelOut
 from routers.notifications import create_notification
@@ -17,11 +18,18 @@ UPDATE_CHANNEL_SQL = """
 """
 
 
-def refresh_user_channel(user_id: int, channel_url: str) -> tuple[dict | None, str | None]:
+def refresh_user_channel(
+    user_id: int, channel_url: str, background_tasks: BackgroundTasks | None = None
+) -> tuple[dict | None, str | None]:
     """Resolves channel_url via the YouTube API, persists the result on the
     user row, and writes a channel_fetch_success/error notification. Returns
     (channel_data, fetch_error) - exactly one is non-None. A failed fetch
-    records the error but keeps the last good snapshot already on the user."""
+    records the error but keeps the last good snapshot already on the user.
+
+    On success, also queues a warm of the forecast's channel history cache
+    (channel_cache.py) on background_tasks, so it runs after the response is
+    sent. Every channel_url resolution goes through here (signup and
+    /channel/refresh), which makes it the one trigger for cache warming."""
     channel_data: dict | None = None
     fetch_error: str | None = None
 
@@ -39,6 +47,9 @@ def refresh_user_channel(user_id: int, channel_url: str) -> tuple[dict | None, s
                 "user_id": user_id,
             },
         )
+
+    if channel_data and channel_data.get("channel_id") and background_tasks is not None:
+        schedule_warm(background_tasks, channel_data["channel_id"])
 
     if channel_data:
         create_notification(
@@ -84,7 +95,9 @@ def get_my_channel(user: dict = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=ChannelOut)
-def refresh_my_channel(user: dict = Depends(get_current_user)):
-    channel_data, fetch_error = refresh_user_channel(user["id"], user.get("channel_url") or "")
+def refresh_my_channel(background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
+    channel_data, fetch_error = refresh_user_channel(
+        user["id"], user.get("channel_url") or "", background_tasks
+    )
     # on failure the previous snapshot is still stored, so keep showing it
     return channel_out(user.get("channel_url"), channel_data or user.get("channel_data"), fetch_error)

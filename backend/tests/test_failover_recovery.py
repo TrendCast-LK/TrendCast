@@ -718,6 +718,7 @@ REQUIRED_ARTIFACTS = [
     "catboost_magnitude.cbm", "catboost_shape_form.cbm", "catboost_shape_c.cbm", "catboost_shape_theta.cbm",
     "catboost_shape_k.cbm", "catboost_shape_t0.cbm", "pca_text.pkl", "pca_image.pkl",
     "feature_columns.json", "maturation_curve.json", "config.json",
+    "histattn_v2.pt", "histattn_scaler.pkl", "histattn_config.json", "histattn_tab_columns.json",
 ]
 
 

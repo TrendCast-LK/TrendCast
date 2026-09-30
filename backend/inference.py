@@ -1,8 +1,18 @@
-"""Forecast inference pipeline for TrendCast.
+"""Forecast inference pipeline for TrendCast: a CatBoost + HistAttnV2 ensemble.
 
-Matches the artifact export in artifacts/ and MODEL_INTEGRATION.md.
-Loads training artifacts once, never refits PCA, and assembles the feature
-vector in the exact CatBoost column order from feature_columns.json.
+    log(m) = w * log(m)_HistAttnV2 + (1 - w) * log(m)_CatBoost
+
+with w = ensemble_weight from histattn_config.json. Artifacts come from
+ensemble_artifacts/ (export_artifacts.py, then export_histattn_v2.py). They are
+loaded once; the PCA objects and the HistAttnV2 scaler are never refit.
+
+One request encodes the target video once. The raw 512-dim CLIP text/image
+vectors feed HistAttnV2 and their PCA-32 projections feed CatBoost; the two
+forms must not be swapped. HistAttnV2 also needs the channel's prior videos,
+already encoded. Those come from the channel history cache (channel_cache.py),
+which is filled in the background at signup / channel refresh. When the cache
+has nothing for the channel, the forecast is CatBoost-only and
+used_channel_context is False.
 """
 
 from __future__ import annotations
@@ -12,23 +22,41 @@ import json
 import logging
 import math
 import os
+import pickle
 import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import joblib
 import numpy as np
+import pandas as pd
 import requests
 from catboost import CatBoostClassifier, CatBoostRegressor
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 
+import histattn
+
+logger = logging.getLogger(__name__)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ARTIFACTS_DIR = REPO_ROOT / "artifacts"
+ARTIFACTS_DIR = REPO_ROOT / "ensemble_artifacts"
+
+REQUIRED_ARTIFACTS = [
+    "catboost_magnitude.cbm", "catboost_shape_form.cbm",
+    "catboost_shape_c.cbm", "catboost_shape_theta.cbm",
+    "catboost_shape_k.cbm", "catboost_shape_t0.cbm",
+    "pca_text.pkl", "pca_image.pkl",
+    "feature_columns.json", "maturation_curve.json", "config.json",
+    "histattn_v2.pt", "histattn_scaler.pkl", "histattn_config.json", "histattn_tab_columns.json",
+]
 
 THUMBNAIL_DOWNLOAD_TIMEOUT_SECONDS = 10.0
+THUMBNAIL_DOWNLOAD_WORKERS = 8
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 CHANNEL_HISTORY_TTL_SECONDS = 6 * 60 * 60
 MAX_HISTORY_VIDEOS = 30
@@ -81,6 +109,26 @@ class InferenceState:
     text_model: SentenceTransformer | None = None
     image_model: SentenceTransformer | None = None
 
+    histattn_model: Any = None
+    histattn_scaler: Any = None
+    histattn_config: dict[str, Any] = field(default_factory=dict)
+    histattn_tab_columns: list[str] = field(default_factory=list)
+    histattn_tab_indices: list[int] = field(default_factory=list)  # positions in feature_columns
+    ensemble_weight: float = 0.0
+    max_hist: int = 0
+    encoder_signature: str = ""
+
+
+@dataclass
+class TargetEncoding:
+    """One encoder pass over the target video, in both forms the ensemble needs."""
+    text_512: np.ndarray          # raw text embedding -> HistAttnV2
+    image_512: np.ndarray | None  # raw image embedding -> HistAttnV2; None without a thumbnail
+    text_pca: np.ndarray          # PCA-32 of text_512 -> CatBoost
+    image_pca: np.ndarray         # PCA-32 of image_512 (or the mean embedding) -> CatBoost
+    has_thumbnail: int
+    thumbnail_alignment: float
+
 
 _state = InferenceState()
 _CHANNEL_HISTORY_CACHE: dict[str, dict[str, Any]] = {}
@@ -114,14 +162,7 @@ def load_artifacts() -> None:
     state = InferenceState()
 
     try:
-        required = [
-            "catboost_magnitude.cbm", "catboost_shape_form.cbm",
-            "catboost_shape_c.cbm", "catboost_shape_theta.cbm",
-            "catboost_shape_k.cbm", "catboost_shape_t0.cbm",
-            "pca_text.pkl", "pca_image.pkl",
-            "feature_columns.json", "maturation_curve.json", "config.json",
-        ]
-        for name in required:
+        for name in REQUIRED_ARTIFACTS:
             path = ARTIFACTS_DIR / name
             if not path.exists():
                 raise FileNotFoundError(f"missing artifact: {path}")
@@ -156,6 +197,8 @@ def load_artifacts() -> None:
         state.shape_form_model = CatBoostClassifier()
         state.shape_form_model.load_model(str(ARTIFACTS_DIR / "catboost_shape_form.cbm"))
 
+        _load_histattn(state)
+
         state.text_model = SentenceTransformer("sentence-transformers/clip-ViT-B-32-multilingual-v1")
         state.image_model = SentenceTransformer("sentence-transformers/clip-ViT-B-32")
 
@@ -172,6 +215,43 @@ def load_artifacts() -> None:
         state.load_time_seconds,
     )
     _state = state
+
+
+def _load_histattn(state: InferenceState) -> None:
+    """Loads HistAttnV2 and its scaler, and checks them against the CatBoost
+    artifacts they were exported alongside."""
+    cfg = _load_json(ARTIFACTS_DIR / "histattn_config.json")
+    tab_columns = _load_json(ARTIFACTS_DIR / "histattn_tab_columns.json")
+    with (ARTIFACTS_DIR / "histattn_scaler.pkl").open("rb") as fh:
+        scaler = pickle.load(fh)  # fitted StandardScaler; transform only, never fit
+
+    if cfg.get("ensemble_uses_dino"):
+        raise ValueError("histattn_config.json expects DINOv2 embeddings, which this backend does not compute")
+    if not 0.0 <= float(cfg["ensemble_weight"]) <= 1.0:
+        raise ValueError(f"ensemble_weight must be in [0, 1], got {cfg['ensemble_weight']}")
+    if int(cfg["n_tab"]) != len(tab_columns) or int(scaler.n_features_in_) != len(tab_columns):
+        raise ValueError(
+            f"HistAttnV2 tabular width mismatch: config n_tab={cfg['n_tab']}, "
+            f"scaler={scaler.n_features_in_}, histattn_tab_columns.json={len(tab_columns)}"
+        )
+    if list(getattr(scaler, "feature_names_in_", tab_columns)) != tab_columns:
+        raise ValueError("histattn_scaler.pkl column order differs from histattn_tab_columns.json")
+    missing = [c for c in tab_columns if c not in state.feature_columns]
+    if missing:
+        raise ValueError(f"HistAttnV2 tabular columns not in feature_columns.json: {missing}")
+
+    state.histattn_config = cfg
+    state.histattn_tab_columns = tab_columns
+    state.histattn_tab_indices = [state.feature_columns.index(c) for c in tab_columns]
+    state.histattn_scaler = scaler
+    state.histattn_model = histattn.load_model(ARTIFACTS_DIR / "histattn_v2.pt", cfg)
+    state.ensemble_weight = float(cfg["ensemble_weight"])
+    state.max_hist = int(cfg["max_hist"])
+    # Cached history embeddings are only valid for the encoders and text
+    # template that produced them; channel_cache.py re-encodes on a change.
+    state.encoder_signature = "|".join(
+        str(state.config.get(k, "")) for k in ("text_encoder", "image_encoder", "text_input_template")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -245,8 +325,9 @@ def _prepare_for_pca(emb: np.ndarray) -> np.ndarray:
 # Channel history
 # ---------------------------------------------------------------------------
 
-def _fetch_channel_history(channel_id: str) -> list[dict[str, Any]]:
-    """Last <=30 uploads with view counts and category IDs.
+def _fetch_channel_history(channel_id: str, *, use_cache: bool = True) -> list[dict[str, Any]]:
+    """Last <=30 uploads, newest first, with view counts, category IDs and the
+    title/tags/thumbnail/duration the channel history cache encodes.
 
     Fetches ONE page of 50 playlist items, not the full history. A large
     channel can have tens of thousands of uploads; paginating through all of
@@ -256,7 +337,7 @@ def _fetch_channel_history(channel_id: str) -> list[dict[str, Any]]:
     cache_key = channel_id.strip()
     now = time.time()
     cached = _CHANNEL_HISTORY_CACHE.get(cache_key)
-    if cached and (now - cached["fetched_at"]) < CHANNEL_HISTORY_TTL_SECONDS:
+    if use_cache and cached and (now - cached["fetched_at"]) < CHANNEL_HISTORY_TTL_SECONDS:
         return cached["videos"]
 
     api_key = _youtube_api_key()
@@ -298,7 +379,7 @@ def _fetch_channel_history(channel_id: str) -> list[dict[str, Any]]:
 
     resp = requests.get(
         f"{YOUTUBE_API_BASE}/videos",
-        params={"part": "snippet,statistics", "id": ",".join(video_ids), "key": api_key},
+        params={"part": "snippet,statistics,contentDetails", "id": ",".join(video_ids), "key": api_key},
         timeout=15,
     )
     if resp.status_code in (403, 429):
@@ -313,6 +394,9 @@ def _fetch_channel_history(channel_id: str) -> list[dict[str, Any]]:
         if not published_at:
             continue
         category_id = snippet.get("categoryId")
+        thumbnails = snippet.get("thumbnails") or {}
+        thumbnail = thumbnails.get("high") or thumbnails.get("medium") or thumbnails.get("default") or {}
+        duration_s = _parse_duration_seconds((item.get("contentDetails") or {}).get("duration"))
         history.append({
             "video_id": item.get("id"),
             "published_at": datetime.fromisoformat(
@@ -320,6 +404,10 @@ def _fetch_channel_history(channel_id: str) -> list[dict[str, Any]]:
             ).astimezone(timezone.utc),
             "view_count": int(stats.get("viewCount", 0) or 0),
             "category_id": int(category_id) if category_id else None,
+            "title": snippet.get("title") or "",
+            "tags": list(snippet.get("tags") or []),
+            "thumbnail_url": thumbnail.get("url"),
+            "duration_s": None if math.isnan(duration_s) else duration_s,
         })
 
     history.sort(key=lambda r: r["published_at"], reverse=True)
@@ -379,8 +467,8 @@ def _build_feature_vector(
     publish_time: datetime,
     thumbnail_alignment: float,
     has_thumbnail: int,
-    text_embedding: np.ndarray,
-    image_embedding: np.ndarray,
+    text_pca: np.ndarray,
+    image_pca: np.ndarray,
     category_id: int | None,
     channel_video_count: float,
     channel_median_views: float,
@@ -405,10 +493,8 @@ def _build_feature_vector(
     values.extend([hour_sin, hour_cos, dow_sin, dow_cos])
     values.extend([float(thumbnail_alignment), float(has_thumbnail)])
 
-    text_pca = state.pca_text.transform(_prepare_for_pca(text_embedding).reshape(1, -1))[0]
-    img_pca = state.pca_image.transform(_prepare_for_pca(image_embedding).reshape(1, -1))[0]
     values.extend(float(v) for v in text_pca)
-    values.extend(float(v) for v in img_pca)
+    values.extend(float(v) for v in image_pca)
 
     for category in state.config.get("categories", []):
         values.append(1.0 if category_id is not None and int(category_id) == int(category) else 0.0)
@@ -425,7 +511,11 @@ def _build_feature_vector(
         raise ValueError(
             f"feature length mismatch: expected {len(state.feature_columns)}, got {len(values)}"
         )
-    return np.asarray(values, dtype=float)
+    # Both export scripts train on X.fillna(0): a missing value (e.g. no
+    # duration on the form) was 0 in training, never NaN. CatBoost would
+    # accept a NaN, but HistAttnV2's scaler and network propagate it into a
+    # NaN forecast.
+    return np.nan_to_num(np.asarray(values, dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -468,7 +558,7 @@ def _forecast_curve(
 
 
 # ---------------------------------------------------------------------------
-# Public entry points
+# Encoding (shared by the target video and the channel history cache)
 # ---------------------------------------------------------------------------
 
 def _download_thumbnail(url: str) -> tuple[Image.Image | None, str | None]:
@@ -481,6 +571,180 @@ def _download_thumbnail(url: str) -> tuple[Image.Image | None, str | None]:
         return None, "thumbnail_unavailable"
 
 
+def _text_input(title: str, tags: list[str]) -> str:
+    # config.json text_input_template: "{title}. {title}. {tags_joined}"
+    return f"{title}. {title}. {' '.join(tags[:10])}"
+
+
+def encode_texts(state: InferenceState, texts: list[str]) -> np.ndarray:
+    """Raw (un-normalised) 512-dim text embeddings, one row per input."""
+    return state.text_model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+
+
+def encode_images(state: InferenceState, images: list[Image.Image]) -> np.ndarray:
+    """Raw (un-normalised) 512-dim image embeddings, one row per input."""
+    return state.image_model.encode(images, convert_to_numpy=True, show_progress_bar=False)
+
+
+def encode_target(
+    state: InferenceState, title: str, tags: list[str], image: Image.Image | None
+) -> TargetEncoding:
+    """Runs each encoder once and derives both forms from that one output: raw
+    512 for HistAttnV2, PCA-32 (loaded, never refit) for CatBoost."""
+    text_512 = encode_texts(state, [_text_input(title, tags)])[0]
+
+    # A missing thumbnail gives CatBoost the stored MEAN embedding, not a zero
+    # vector and not a black image: both are specific, unusual points in
+    # embedding space that the model would read as a real (weird) thumbnail.
+    # HistAttnV2 gets a zero image half instead (see histattn.joint_embedding).
+    if image is not None:
+        image_512 = encode_images(state, [image])[0]
+        catboost_image = image_512
+        has_thumbnail = 1
+        thumbnail_alignment = _cosine_similarity(image_512, text_512)
+    else:
+        image_512 = None
+        catboost_image = state.mean_image_embedding
+        has_thumbnail = 0
+        thumbnail_alignment = 0.0
+
+    return TargetEncoding(
+        text_512=text_512,
+        image_512=image_512,
+        text_pca=state.pca_text.transform(_prepare_for_pca(text_512).reshape(1, -1))[0],
+        image_pca=state.pca_image.transform(_prepare_for_pca(catboost_image).reshape(1, -1))[0],
+        has_thumbnail=has_thumbnail,
+        thumbnail_alignment=thumbnail_alignment,
+    )
+
+
+def encode_history_videos(state: InferenceState, videos: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Raw 512-dim text/image embeddings for channel videos from
+    _fetch_channel_history, encoded exactly like a target video. Adds
+    text_embedding and image_embedding (None when the thumbnail could not be
+    downloaded) to a copy of each row."""
+    if not videos:
+        return []
+    texts = encode_texts(state, [_text_input(v.get("title") or "", v.get("tags") or []) for v in videos])
+
+    def _fetch(video: dict[str, Any]) -> Image.Image | None:
+        url = video.get("thumbnail_url")
+        return _download_thumbnail(url)[0] if url else None
+
+    with ThreadPoolExecutor(max_workers=THUMBNAIL_DOWNLOAD_WORKERS) as pool:
+        images = list(pool.map(_fetch, videos))
+    present = [i for i, img in enumerate(images) if img is not None]
+    image_rows = dict(zip(present, encode_images(state, [images[i] for i in present]))) if present else {}
+
+    return [
+        {**video, "text_embedding": texts[i], "image_embedding": image_rows.get(i)}
+        for i, video in enumerate(videos)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Ensemble
+# ---------------------------------------------------------------------------
+
+class _StageTimer:
+    def __init__(self) -> None:
+        self.ms: dict[str, float] = {}
+
+    @contextmanager
+    def stage(self, name: str):
+        start = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.ms[name] = (time.perf_counter() - start) * 1000.0
+
+
+def blend_log_m(state: InferenceState, log_m_catboost: float, log_m_histattn: float | None) -> float:
+    if log_m_histattn is None:
+        return log_m_catboost
+    w = state.ensemble_weight
+    return w * log_m_histattn + (1.0 - w) * log_m_catboost
+
+
+def histattn_tab_features(state: InferenceState, catboost_row: np.ndarray) -> np.ndarray:
+    """HistAttnV2's 30 tabular inputs are CatBoost's 94 minus the PCA columns,
+    picked by name and scaled with the loaded scaler."""
+    tab = np.asarray(catboost_row, dtype=float).reshape(-1)[state.histattn_tab_indices]
+    frame = pd.DataFrame([tab], columns=state.histattn_tab_columns)
+    return state.histattn_scaler.transform(frame)[0]
+
+
+def _history_context(
+    state: InferenceState,
+    channel_id: str,
+    target_time: datetime,
+    anchor_s: float,
+    channel_videos: list[dict[str, Any]],
+    history_loader: Callable[[str], Any] | None,
+    schedule_warm: Callable[[str], None] | None,
+) -> tuple[tuple[np.ndarray, np.ndarray, np.ndarray] | None, str]:
+    """HistAttnV2's history arrays from the channel history cache, plus the
+    cache status: hit | stale | miss | error | disabled.
+
+    Never encodes anything itself. A miss, a stale entry or uploads the cache
+    has not seen yet schedule a background re-warm; a miss (e.g. a brand-new
+    signup whose warm is still running) returns no history, so the forecast
+    falls back to CatBoost-only instead of failing or blocking.
+
+    history_loader(channel_id) returns None or an object with .videos (rows
+    with video_id, published_at, view_count, duration_s, text_embedding,
+    image_embedding) and .fresh."""
+    if history_loader is None:
+        return None, "disabled"
+
+    try:
+        cached = history_loader(channel_id)
+        status = "miss" if cached is None else ("hit" if cached.fresh else "stale")
+    except Exception:  # noqa: BLE001 - a cache outage must not fail the forecast
+        logger.exception("[forecast] channel history cache read failed for %s", channel_id)
+        cached, status = None, "error"
+
+    if cached is not None and status == "hit" and cached.videos:
+        # The channel uploaded since the last warm. Compared by date, not by
+        # id: channel_videos can be up to 6h older than the cache, and an old
+        # video that has since dropped out of the cached newest-max_hist must
+        # not trigger a re-warm on every request.
+        newest_cached = max(v["published_at"] for v in cached.videos)
+        if any(v["published_at"] > newest_cached for v in channel_videos):
+            status = "stale"
+
+    if status != "hit" and schedule_warm is not None:
+        schedule_warm(channel_id)
+    if cached is None:
+        return None, status
+
+    # View counts from the metadata fetched for this request are fresher than
+    # the cached ones; embeddings only come from the cache.
+    fresh_views = {v["video_id"]: v["view_count"] for v in channel_videos}
+    now = datetime.now(timezone.utc)
+    videos = [
+        {
+            "published_at": v["published_at"],
+            "day7_views": histattn.day7_estimate(
+                fresh_views.get(v["video_id"], v["view_count"]),
+                (now - v["published_at"]).total_seconds() / 86400.0,
+                state.maturation_curve,
+            ),
+            "duration_s": v["duration_s"],
+            "embedding": histattn.joint_embedding(v["text_embedding"], v["image_embedding"]),
+        }
+        for v in cached.videos
+    ]
+    arrays = histattn.build_history_arrays(
+        videos, target_time, anchor_s, state.maturation_curve, state.max_hist
+    )
+    return arrays, status
+
+
+# ---------------------------------------------------------------------------
+# Public entry points
+# ---------------------------------------------------------------------------
+
 def run_forecast(
     state: InferenceState,
     title: str,
@@ -492,6 +756,8 @@ def run_forecast(
     duration: str | None = None,
     description: str | None = None,
     category_id: int | None = None,
+    history_loader: Callable[[str], Any] | None = None,
+    schedule_warm: Callable[[str], None] | None = None,
 ) -> dict:
     image, warning = (_download_thumbnail(thumbnail_url) if thumbnail_url else (None, "thumbnail_unavailable"))
     return run_forecast_on_image(
@@ -505,6 +771,8 @@ def run_forecast(
         description=description,
         category_id=category_id,
         warnings=[warning] if warning else [],
+        history_loader=history_loader,
+        schedule_warm=schedule_warm,
     )
 
 
@@ -520,7 +788,15 @@ def run_forecast_on_image(
     description: str | None = None,
     category_id: int | None = None,
     warnings: list[str] | None = None,
+    history_loader: Callable[[str], Any] | None = None,
+    schedule_warm: Callable[[str], None] | None = None,
 ) -> dict:
+    """7-day forecast from the CatBoost + HistAttnV2 ensemble.
+
+    history_loader reads the channel history cache (channel_cache.load_history)
+    and schedule_warm queues a background re-warm of it; without a loader the
+    forecast is CatBoost-only. used_channel_context in the result is True only
+    when HistAttnV2 ran on cached channel history."""
     if not state.ready:
         load_artifacts()
         state = get_state()
@@ -533,41 +809,25 @@ def run_forecast_on_image(
     warnings = list(warnings or [])
     config = state.config
     min_prior = int(config.get("min_prior_videos", 5))
+    timer = _StageTimer()
 
-    # --- text embedding -----------------------------------------------------
-    text_input = f"{title}. {title}. {' '.join(tags[:10])}"
-    text_emb = state.text_model.encode(
-        [text_input], convert_to_numpy=True, show_progress_bar=False
-    )[0]
+    # --- target encoding: one pass, raw-512 and PCA-32 ----------------------
+    with timer.stage("encode"):
+        target = encode_target(state, title, tags, image)
+    if not target.has_thumbnail and "thumbnail_unavailable" not in warnings:
+        warnings.append("thumbnail_unavailable")
 
-    # --- image embedding ----------------------------------------------------
-    # A missing thumbnail uses the stored MEAN embedding, not a zero vector and
-    # not a black image: both are specific, unusual points in embedding space
-    # that the model would read as a real (weird) thumbnail.
-    if image is not None:
-        image_emb = state.image_model.encode(
-            [image], convert_to_numpy=True, show_progress_bar=False
-        )[0]
-        has_thumbnail = 1
-        thumbnail_alignment = _cosine_similarity(image_emb, text_emb)
-    else:
-        image_emb = state.mean_image_embedding.copy()
-        has_thumbnail = 0
-        thumbnail_alignment = 0.0
-        if "thumbnail_unavailable" not in warnings:
-            warnings.append("thumbnail_unavailable")
-
-    # --- channel features ---------------------------------------------------
-    history = _fetch_channel_history(channel_id)
-    if len(history) < min_prior:
-        raise InsufficientHistoryError(
-            f"This channel has {len(history)} prior uploads; "
-            f"at least {min_prior} are needed for a reliable baseline."
-        )
-    ch = _channel_features(history, state.maturation_curve, min_prior)
+    # --- channel features (YouTube metadata, in-process cache) --------------
+    with timer.stage("channel"):
+        channel_videos = _fetch_channel_history(channel_id)
+        if len(channel_videos) < min_prior:
+            raise InsufficientHistoryError(
+                f"This channel has {len(channel_videos)} prior uploads; "
+                f"at least {min_prior} are needed for a reliable baseline."
+            )
+        ch = _channel_features(channel_videos, state.maturation_curve, min_prior)
     channel_baseline = ch["channel_baseline"]
 
-    # --- remaining scalars --------------------------------------------------
     publish_time = (
         scheduled_upload_time.astimezone(timezone.utc)
         if scheduled_upload_time.tzinfo
@@ -581,10 +841,10 @@ def run_forecast_on_image(
         description_length=len(description or ""),
         tag_count=len(tags),
         publish_time=publish_time,
-        thumbnail_alignment=thumbnail_alignment,
-        has_thumbnail=has_thumbnail,
-        text_embedding=text_emb,
-        image_embedding=image_emb,
+        thumbnail_alignment=target.thumbnail_alignment,
+        has_thumbnail=target.has_thumbnail,
+        text_pca=target.text_pca,
+        image_pca=target.image_pca,
         category_id=category_id,
         channel_video_count=ch["channel_video_count"],
         channel_median_views=channel_baseline,
@@ -594,23 +854,50 @@ def run_forecast_on_image(
     )
     row = features.reshape(1, -1)
 
-    # --- predict ------------------------------------------------------------
+    # --- CatBoost: magnitude + shape ----------------------------------------
+    with timer.stage("catboost"):
+        log_m_catboost = float(state.magnitude_model.predict(row)[0])
+        shape_form = int(state.shape_form_model.predict(row)[0])
+        if shape_form == 1:
+            params = {
+                "k": float(state.shape_k_model.predict(row)[0]),
+                "t0": float(state.shape_t0_model.predict(row)[0]),
+            }
+        else:
+            params = {
+                "c": float(state.shape_c_model.predict(row)[0]),
+                "theta": float(state.shape_theta_model.predict(row)[0]),
+            }
+
+    # --- channel history (cache-first) --------------------------------------
+    with timer.stage("history"):
+        history, cache_status = _history_context(
+            state, channel_id, publish_time, channel_baseline, channel_videos,
+            history_loader, schedule_warm,
+        )
+
+    # --- HistAttnV2 ----------------------------------------------------------
+    log_m_histattn: float | None = None
+    with timer.stage("histattn"):
+        if history is not None:
+            log_m_histattn = histattn.predict_log_m(
+                state.histattn_model,
+                histattn_tab_features(state, features),
+                histattn.joint_embedding(target.text_512, target.image_512),
+                history,
+            )
+    if log_m_histattn is not None and not math.isfinite(log_m_histattn):
+        logger.error("[forecast] HistAttnV2 returned %s for %s; using CatBoost only", log_m_histattn, channel_id)
+        log_m_histattn = None
+    used_channel_context = log_m_histattn is not None
+    history_videos = int(history[2].sum()) if history is not None else 0
+    if not used_channel_context:
+        warnings.append("channel_history_unavailable")
+
     log_m = float(_clip(
-        float(state.magnitude_model.predict(row)[0]),
+        blend_log_m(state, log_m_catboost, log_m_histattn),
         float(config["log_m_min"]), float(config["log_m_max"]),
     ))
-    shape_form = int(state.shape_form_model.predict(row)[0])
-
-    if shape_form == 1:
-        params = {
-            "k": float(state.shape_k_model.predict(row)[0]),
-            "t0": float(state.shape_t0_model.predict(row)[0]),
-        }
-    else:
-        params = {
-            "c": float(state.shape_c_model.predict(row)[0]),
-            "theta": float(state.shape_theta_model.predict(row)[0]),
-        }
 
     curve, shape_family, day1_fraction, used_params = _forecast_curve(
         channel_baseline=channel_baseline,
@@ -621,10 +908,22 @@ def run_forecast_on_image(
     )
 
     # --- uncertainty band (required -- see MODEL_INTEGRATION.md 4.5) --------
+    # residual_std is CatBoost's out-of-sample residual spread; the ensemble's
+    # own residual spread was not exported.
     residual_std = float(config.get("residual_std", 1.09))
     band = float(config.get("band_multiplier", 0.8))
     range_low = channel_baseline * math.exp(log_m - band * residual_std)
     range_high = channel_baseline * math.exp(log_m + band * residual_std)
+
+    timings = {name: round(ms, 1) for name, ms in timer.ms.items()}
+    timings["total"] = round(sum(timer.ms.values()), 1)
+    logger.info(
+        "forecast_timing channel=%s cache=%s history_videos=%d used_channel_context=%s "
+        "encode_ms=%.1f channel_ms=%.1f catboost_ms=%.1f history_ms=%.1f histattn_ms=%.1f total_ms=%.1f",
+        channel_id, cache_status, history_videos, used_channel_context,
+        timings["encode"], timings["channel"], timings["catboost"],
+        timings["history"], timings["histattn"], timings["total"],
+    )
 
     return {
         "status": "ok",
@@ -637,7 +936,13 @@ def run_forecast_on_image(
         "shape_family": shape_family,
         "shape_params": used_params,
         "day1_fraction": day1_fraction,
-        "based_on_videos": len(history),
+        "based_on_videos": len(channel_videos),
         "warnings": warnings,
-        "used_channel_context": True,
+        "used_channel_context": used_channel_context,
+        "log_m_catboost": log_m_catboost,
+        "log_m_histattn": log_m_histattn,
+        "ensemble_weight": state.ensemble_weight if used_channel_context else 0.0,
+        "history_cache": cache_status,
+        "history_videos": history_videos,
+        "timings_ms": timings,
     }
