@@ -1,0 +1,11 @@
+{
+  "n_tab": 30,
+  "emb_txt": 512,
+  "emb_img": 512,
+  "txt_out": 64,
+  "img_out": 32,
+  "d_model": 192,
+  "max_hist": 20,
+  "ensemble_weight": 0.3,
+  "ensemble_uses_dino": false
+}
