@@ -5,6 +5,8 @@ re-applied, and that the archive tables and migration 002 stay in step with
 the core tables.
 """
 
+import re
+
 import pytest
 
 import db_helpers as h
@@ -354,11 +356,15 @@ def test_every_public_table_has_row_level_security(cur):
 
 
 def test_migration_004_enables_row_level_security_on_a_legacy_db(cur, create_database):
-    """A database created before RLS was enabled, plus 004, equals a fresh build."""
+    """A database created before RLS was enabled, plus 004, equals a fresh build.
+
+    Only the tables 004 covers are damaged: tables added later (005, 006) turn
+    RLS on in their own migration, so a pre-004 database never had them."""
+    covered = re.findall(r"ALTER TABLE\s+(\w+)\s+ENABLE ROW LEVEL SECURITY", MIGRATION_004.read_text(encoding="utf-8"))
+    assert "users" in covered and "video_features" in covered
     legacy = create_database()
     with legacy.cursor() as lcur:
-        lcur.execute("SELECT relname FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind = 'r'")
-        for (table,) in lcur.fetchall():
+        for table in covered:
             lcur.execute(f'ALTER TABLE "{table}" DISABLE ROW LEVEL SECURITY')
     legacy.commit()
     with legacy.cursor() as lcur:

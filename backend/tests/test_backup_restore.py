@@ -43,6 +43,13 @@ def seed_every_table(cur):
     h.insert(cur, "channel_stats_archive", channel_id="UCold", channel_title="Old")
     h.insert(cur, "videos_archive", video_id="vold", channel_id="UCold", published_at=h.NOW)
     h.insert(cur, "view_timeseries_archive", video_id="vold", scraped_at=h.NOW)
+    h.insert(cur, "channel_history_cache", channel_id="UC1", encoder="clip|clip|{title}", warmed_at=h.NOW)
+    h.insert(cur, "channel_history_videos", channel_id="UC1", video_id="v0", published_at=h.NOW, view_count=42,
+             duration_s=61.5, text_embedding=[0.25] * 512, image_embedding=None)
+    cur.execute("INSERT INTO admins (full_name, email, password_hash) VALUES ('Root', 'root@x.com', '$2b$12$h') RETURNING id")
+    admin_id = cur.fetchone()[0]
+    h.insert(cur, "admin_audit_log", admin_id=admin_id, action="user.disable", target_type="user", target_id=uid,
+             details=Json({"email": "user@example.com"}))
 
 
 def public_tables(cur):
