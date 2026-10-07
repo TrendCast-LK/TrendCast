@@ -18,6 +18,7 @@ import pandas as pd
 import json, re, os
 import joblib
 from sklearn.decomposition import PCA
+from sklearn.model_selection import GroupShuffleSplit
 from catboost import CatBoostRegressor, CatBoostClassifier
 
 H = 7
@@ -158,6 +159,20 @@ m_mag.fit(X, y_mag, sample_weight=w)
 m_mag.save_model(os.path.join(OUT, "catboost_magnitude.cbm"))
 print("  magnitude       -> catboost_magnitude.cbm")
 
+# m_mag above is fit on every row (correct for deployment), so its own
+# residuals are in-sample and understate real prediction uncertainty.
+# Fit a throwaway twin on a channel-disjoint split just to measure
+# residual_std honestly, then discard it -- m_mag itself is unaffected.
+gss = GroupShuffleSplit(n_splits=1, test_size=0.15, random_state=0)
+tr_i, val_i = next(gss.split(X, y_mag, groups=df["channel_id"]))
+m_mag_val = CatBoostRegressor(iterations=500, depth=6, learning_rate=0.05,
+                              loss_function="MAE", verbose=0, random_state=0)
+m_mag_val.fit(X.iloc[tr_i], y_mag.iloc[tr_i], sample_weight=w[tr_i])
+residual_std = float(np.std(y_mag.iloc[val_i].values - m_mag_val.predict(X.iloc[val_i])))
+print(f"  residual_std: in-sample (full-corpus m_mag) = "
+      f"{float(np.std(y_mag.values - m_mag.predict(X))):.4f}, "
+      f"out-of-sample (held-out channel split) = {residual_std:.4f}")
+
 usable = df["shape_usable"] == True
 y_form = (df.loc[usable, "shape_form"] == "logistic").astype(int)
 m_form = CatBoostClassifier(iterations=400, depth=5, learning_rate=0.05,
@@ -197,7 +212,6 @@ print(f"Feature order saved ({len(feature_cols)} columns)")
 # ---------------------------------------------------------------
 # 10. Config: clip bounds, residual std, mean embeddings, categories
 # ---------------------------------------------------------------
-resid = y_mag.values - m_mag.predict(X)
 mean_img = image_embeddings[img_norm > 1e-6].mean(axis=0)
 mean_txt = text_embeddings.mean(axis=0)
 
@@ -206,7 +220,7 @@ config = {
     "pca_components": N_COMPONENTS,
     "log_m_min": float(df["log_m_clipped"].min()),
     "log_m_max": float(df["log_m_clipped"].max()),
-    "residual_std": float(np.std(resid)),
+    "residual_std": residual_std,
     "band_multiplier": 0.8,
     "min_prior_videos": 5,
     "max_history_videos": 30,
