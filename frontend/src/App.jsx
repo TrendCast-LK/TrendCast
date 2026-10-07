@@ -8,6 +8,16 @@ import Trends from "./pages/Trends";
 import Settings from "./pages/Settings";
 import Channel from "./pages/Channel";
 import RequireAuth from "./components/RequireAuth";
+import RequireAdmin from "./components/admin/RequireAdmin";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminActivity from "./pages/admin/AdminActivity";
+
+function admin(page) {
+  return <RequireAdmin>{page}</RequireAdmin>;
+}
 
 export default function App() {
   return (
@@ -64,6 +74,13 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      {/* Admin dashboard: separate login and session (AdminAuthContext). */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={admin(<AdminOverview />)} />
+      <Route path="/admin/users" element={admin(<AdminUsers />)} />
+      <Route path="/admin/users/:id" element={admin(<AdminUserDetail />)} />
+      <Route path="/admin/activity" element={admin(<AdminActivity />)} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

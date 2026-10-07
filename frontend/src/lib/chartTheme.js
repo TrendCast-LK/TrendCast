@@ -22,3 +22,14 @@ export function chartColors(isDark) {
         tooltipBg: "rgba(25, 28, 30, 0.9)",
       };
 }
+
+// Two-series charts (admin dashboard). Fixed order: series A, then B. The
+// steps are validated per mode against the page surface (lightness band,
+// CVD and normal-vision separation, 3:1 contrast), so dark mode uses its own
+// steps rather than the light ones flipped. `surface` draws the 2px gaps
+// between stacked segments.
+export function seriesColors(isDark) {
+  return isDark
+    ? { a: "#8083f5", b: "#e5508f", surface: "#101014" }
+    : { a: "#4648d4", b: "#b4136d", surface: "#f7f9fb" };
+}

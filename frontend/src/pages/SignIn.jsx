@@ -146,6 +146,16 @@ export default function SignIn() {
                 Sign up
               </Link>
             </p>
+
+            <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
+              <Link
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors duration-200"
+                to="/admin/login"
+              >
+                <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                Admin sign-in
+              </Link>
+            </p>
           </div>
         </div>
       </main>
