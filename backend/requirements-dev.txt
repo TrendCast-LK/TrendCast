@@ -1,2 +1,4 @@
 -r requirements.txt
-pytest
+pytest==9.1.1
+httpx==0.28.1  # FastAPI's TestClient
+httplib2==0.22.0  # tests/test_failover_recovery.py builds fake YouTube API errors with it
