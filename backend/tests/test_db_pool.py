@@ -117,3 +117,52 @@ def test_waiting_for_a_connection_times_out_instead_of_hanging(api, monkeypatch)
             context.__exit__(None, None, None)
     with db.get_cursor() as cur:  # slots were released
         cur.execute("SELECT 1")
+
+
+def _keep_idle_pool(api):
+    db = api.backend.db
+    params = {**api.conn.get_dsn_parameters(), "password": api.conn.info.password}
+    pool = db.KeepIdlePool(db.MAX_CONNECTIONS, **{k: params[k] for k in ("host", "port", "user", "password", "dbname")})
+    api.monkeypatch.setattr(db, "pool", pool)
+    return pool
+
+
+def test_returned_connections_stay_open_for_the_next_request(api):
+    """Remote connections are slow to open, so the pool must not close one it gets back."""
+    db = api.backend.db
+    pool = _keep_idle_pool(api)
+    barrier = threading.Barrier(3)
+    seen = []
+
+    def hold(_):
+        with db.get_connection() as conn:
+            seen.append(id(conn))
+            barrier.wait(timeout=30)
+
+    _, errors = run_in_threads(hold, 3)
+    assert errors == [] and len(set(seen)) == 3
+    assert len(pool._pool) == 3 and not any(c.closed for c in pool._pool)
+    with db.get_connection() as conn:
+        assert id(conn) in seen  # reused, not reopened
+    pool.closeall()
+
+
+def test_warm_pool_opens_distinct_idle_connections(api):
+    db = api.backend.db
+    pool = _keep_idle_pool(api)
+    db.warm_pool(3)
+    assert len(pool._pool) == 3
+    pool.closeall()
+
+
+def test_a_closed_idle_connection_is_replaced(api):
+    db = api.backend.db
+    pool = _keep_idle_pool(api)
+    with db.get_connection() as conn:
+        first = conn
+    first.close()
+    with db.get_connection() as conn:
+        assert conn is not first and not conn.closed
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+    pool.closeall()

@@ -208,3 +208,221 @@ class PredictionOut(BaseModel):
     tau: Optional[float] = None
     used_channel_context: Optional[bool] = None
     created_at: datetime
+
+
+# ---- Admin dashboard ----------------------------------------------------------
+
+
+class AdminOut(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    last_login_at: Optional[datetime] = None
+
+
+class AdminAuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    admin: AdminOut
+
+
+class AdminUserCounts(BaseModel):
+    total: int
+    active: int
+    disabled: int
+    new_7d: int
+    new_30d: int
+    with_channel: int
+    with_fetch_error: int
+
+
+class AdminPredictionCounts(BaseModel):
+    total: int
+    complete: int
+    draft: int
+    last_7d: int
+
+
+class AdminForecastSplit(BaseModel):
+    """Complete predictions by model since `since` (None = all time)."""
+    since: Optional[datetime] = None
+    ensemble: int
+    catboost_only: int
+
+
+class AdminDailyPoint(BaseModel):
+    day: date
+    signups: int
+    predictions: int
+    ensemble: int
+    catboost_only: int
+
+
+class AdminSystemStatus(BaseModel):
+    database: str = "ok"
+    model_ready: bool
+    model_error: Optional[str] = None
+    model_device: Optional[str] = None
+    model_load_time_seconds: Optional[float] = None
+
+
+class AdminOverview(BaseModel):
+    users: AdminUserCounts
+    predictions: AdminPredictionCounts
+    forecasts: AdminForecastSplit
+    daily: List[AdminDailyPoint]
+    system: AdminSystemStatus
+
+
+class AdminUserRow(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    subscribers: int
+    channel_url: Optional[str] = None
+    channel_title: Optional[str] = None
+    channel_thumbnail_url: Optional[str] = None
+    has_fetch_error: bool
+    prediction_count: int
+    last_prediction_at: Optional[datetime] = None
+
+
+class AdminUserList(BaseModel):
+    total: int
+    items: List[AdminUserRow]
+
+
+class AdminPredictionRow(BaseModel):
+    id: int
+    title: str
+    category: Optional[str] = None
+    status: str
+    predicted_views: Optional[int] = None
+    confidence: Optional[float] = None
+    used_channel_context: Optional[bool] = None
+    created_at: datetime
+
+
+class AdminAuditEntry(BaseModel):
+    id: int
+    admin_id: Optional[int] = None
+    admin_email: Optional[str] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[int] = None
+    details: dict
+    created_at: datetime
+
+
+class AdminAuditList(BaseModel):
+    total: int
+    items: List[AdminAuditEntry]
+
+
+class AdminUserDetail(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    subscribers: int
+    monthly_views: int
+    channel: ChannelOut
+    prediction_count: int
+    complete_count: int
+    draft_count: int
+    notification_count: int
+    unread_notification_count: int
+    recent_predictions: List[AdminPredictionRow]
+    recent_activity: List[AdminAuditEntry]
+
+
+class AdminDeleteUserRequest(BaseModel):
+    # Must equal the user's email: a server-side guard against deleting the wrong row.
+    confirm_email: str
+
+
+class AdminPredictionListRow(AdminPredictionRow):
+    user_id: int
+    user_email: str
+    user_name: str
+    thumbnail_url: Optional[str] = None
+
+
+class AdminHistogramBucket(BaseModel):
+    low: float
+    high: float
+    count: int
+
+
+class AdminCategoryCount(BaseModel):
+    category: str
+    count: int
+
+
+class AdminPredictionSummary(BaseModel):
+    """Over every prediction matching the filters, not just the page."""
+    count: int
+    complete: int
+    avg_confidence: Optional[float] = None
+    median_views: Optional[float] = None
+    p90_views: Optional[float] = None
+    views_histogram: List[AdminHistogramBucket]  # log10 buckets of complete predictions' views
+    confidence_histogram: List[AdminHistogramBucket]  # tenths of 0-1, empty buckets included
+    categories: List[AdminCategoryCount]
+
+
+class AdminPredictionList(BaseModel):
+    total: int
+    items: List[AdminPredictionListRow]
+    summary: AdminPredictionSummary
+    all_categories: List[str]
+
+
+class AdminPredictionDetail(PredictionOut):
+    user_id: int
+    user_email: str
+    user_name: str
+    dataset_url: Optional[str] = None
+
+
+class AdminCacheRow(BaseModel):
+    channel_id: str
+    channel_title: Optional[str] = None
+    linked_users: int
+    has_entry: bool  # FALSE: a user links this channel but it was never warmed or failed before a row existed
+    status: str  # fresh | stale | never
+    encoder: Optional[str] = None
+    encoder_matches: Optional[bool] = None  # None while the model isn't loaded
+    warmed_at: Optional[datetime] = None
+    last_error: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    video_count: int
+    newest_video_at: Optional[datetime] = None
+
+
+class AdminCacheSummary(BaseModel):
+    total: int
+    fresh: int
+    stale: int
+    never: int
+    with_error: int
+    # Complete predictions in the last 7 days (and since the ensemble launch)
+    # that found warm channel history, of all complete ones.
+    hits_7d: int
+    forecasts_7d: int
+
+
+class AdminCacheList(BaseModel):
+    total: int
+    items: List[AdminCacheRow]
+    summary: AdminCacheSummary
+    model_ready: bool
+    ttl_hours: float
+
+
+class AdminWarmResult(BaseModel):
+    queued: int
+    channel_ids: List[str]

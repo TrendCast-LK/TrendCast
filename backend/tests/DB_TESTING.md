@@ -17,7 +17,7 @@ so the live database cannot be reached. To use another disposable server instead
 
 | File | Layer | What it proves |
 |---|---|---|
-| `test_db_schema.py` | A | Scripts build the documented schema; re-runnable; migrations 002/003 reach the same schema as a fresh build; archive tables mirror the core tables |
+| `test_db_schema.py` | A | Scripts build the documented schema; re-runnable; migrations 002–006 reach the same schema as a fresh build; archive tables mirror the core tables |
 | `test_db_constraints.py` | B | Bad data is rejected (CHECK, FK, UNIQUE, NOT NULL, vector size); boundaries and defaults; cascades |
 | `test_api_data.py` | C | The real API routers write the right rows; ownership; error mapping; no orphaned uploads |
 | `test_db_pool.py` | C | The connection pool is safe under concurrent requests |

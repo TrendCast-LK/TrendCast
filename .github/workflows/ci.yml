@@ -1,0 +1,68 @@
+name: CI
+
+# Tests and builds the web app (backend/ + frontend/) on every pull request
+# and every push to main. The forecast model's own tests live in model.yml,
+# which only runs when the model or inference code changes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      # The tests stub inference.py, so the ML stack (torch, CatBoost, CLIP)
+      # is left out here: it is several GB and only test_ensemble_artifacts.py
+      # needs it, which skips itself without torch (see model.yml).
+      - name: Install dependencies
+        run: |
+          grep -vE '^(torch|sentence-transformers|transformers|catboost)==' requirements.txt > /tmp/requirements-ci.txt
+          grep -v '^-r' requirements-dev.txt >> /tmp/requirements-ci.txt
+          pip install -r /tmp/requirements-ci.txt
+
+      # conftest.py starts a disposable pgvector Postgres with `docker run`
+      # (the runner has Docker); the tests never see a real database URL.
+      - name: Pull the test database image
+        run: docker pull pgvector/pgvector:pg16
+
+      - name: Run tests
+        run: python -m pytest -q --ignore=tests/load -p no:cacheprovider
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

@@ -34,8 +34,9 @@ async function parseErrorDetail(response) {
 /**
  * Core fetch wrapper: attaches the bearer token, and throws ApiError with a
  * readable message on non-2xx responses so callers can just `try { } catch`.
+ * `token` overrides the app user's token (the admin dashboard passes its own).
  */
-async function request(path, { method = "GET", json, form, auth = true } = {}) {
+export async function request(path, { method = "GET", json, form, auth = true, token } = {}) {
   const headers = {};
   const init = { method, headers };
 
@@ -47,8 +48,8 @@ async function request(path, { method = "GET", json, form, auth = true } = {}) {
   }
 
   if (auth) {
-    const token = getToken();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const bearer = token ?? getToken();
+    if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
   }
 
   let response;

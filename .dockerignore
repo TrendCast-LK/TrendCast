@@ -1,0 +1,15 @@
+# Build context for backend/Dockerfile is the repository root, but the image
+# only needs backend/ and ensemble_artifacts/. Allowlist those, then drop
+# secrets, uploads, tests and caches from them.
+*
+!backend/
+!ensemble_artifacts/
+
+backend/.env
+backend/.env.*
+backend/uploads/
+backend/tests/
+backend/*.log
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/

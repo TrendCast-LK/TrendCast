@@ -67,7 +67,9 @@ def prediction_id_of(api, user_id):
 # ===========================================================================
 
 # Routes that are open on purpose. Anything else in main.app must demand a login.
-PUBLIC_BY_DESIGN = {("GET", "/health"), ("POST", "/auth/signup"), ("POST", "/auth/login")}
+PUBLIC_BY_DESIGN = {
+    ("GET", "/health"), ("POST", "/auth/signup"), ("POST", "/auth/login"), ("POST", "/admin/auth/login"),
+}
 
 # Open today, with no login and no owner. Listed so a NEW open route cannot appear
 # unnoticed; whether these should stay open is the A7 decision in the test plan.
@@ -85,8 +87,8 @@ def _depends_on(dependant, target) -> bool:
 
 
 def test_route_inventory_every_route_is_protected_or_explicitly_public(api, main_client):
-    """S-A1: a route added without get_current_user fails here until it is classified."""
-    from security import get_current_user
+    """S-A1: a route added without get_current_user (or get_current_admin) fails here until it is classified."""
+    from security import get_current_admin, get_current_user
 
     unclassified = []
     for route in api.main.app.routes:
@@ -96,7 +98,7 @@ def test_route_inventory_every_route_is_protected_or_explicitly_public(api, main
             key = (method, route.path)
             if key in PUBLIC_BY_DESIGN or key in PUBLIC_UNDECIDED:
                 continue
-            if not _depends_on(route.dependant, get_current_user):
+            if not (_depends_on(route.dependant, get_current_user) or _depends_on(route.dependant, get_current_admin)):
                 unclassified.append(key)
     assert unclassified == []
 

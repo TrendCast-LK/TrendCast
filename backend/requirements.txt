@@ -1,22 +1,25 @@
-fastapi
-uvicorn
-psycopg2-binary
-python-dotenv
-pydantic
-python-multipart
-bcrypt
-pyjwt
-email-validator
+# Pinned to the versions the app is tested with. Docker and CI install exactly
+# these; scikit-learn/joblib in particular must match the pickled PCA files in
+# ../ensemble_artifacts/.
+
+fastapi==0.116.0
+uvicorn==0.35.0
+psycopg2-binary==2.9.10
+python-dotenv==1.1.0
+pydantic==2.11.7
+python-multipart==0.0.32
+bcrypt==5.0.0
+pyjwt==2.10.1
+email-validator==2.3.0
 
 # Forecasting model inference (see inference.py)
-numpy
-pandas
-scikit-learn
-joblib
-catboost
-xgboost
-torch
-sentence-transformers
-transformers
-Pillow
-requests
+numpy==2.3.4
+pandas==3.0.0
+scikit-learn==1.9.0
+joblib==1.6.0
+catboost==1.2.10
+torch==2.14.0
+sentence-transformers==6.1.0
+transformers==5.17.0
+Pillow==11.2.1
+requests==2.32.3
