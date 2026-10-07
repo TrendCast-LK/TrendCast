@@ -1,0 +1,32 @@
+# Runs the TrendCast web app: the FastAPI backend and the React frontend.
+#   docker compose up --build     # first time, and after code changes
+#   docker compose up -d          # start in the background
+#   docker compose down           # stop
+# Then open http://localhost:8080 (admin dashboard: /admin/login).
+#
+# The database is not in here: the backend uses the Supabase database in
+# backend/.env (SUPABASE_DB_URL, JWT_SECRET_KEY, YOUTUBE_API_KEY), read at
+# runtime and never copied into an image.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: backend/.env
+    volumes:
+      # Same folder as a local `uvicorn` run, so uploaded thumbnails are shared
+      # between the two ways of running the app and survive rebuilds.
+      - ./backend/uploads:/app/backend/uploads
+    ports:
+      # Only for API docs / debugging (http://localhost:8000/docs); the app goes through the frontend.
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

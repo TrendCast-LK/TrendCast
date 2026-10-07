@@ -98,6 +98,26 @@ To use the admin dashboard (`/admin/login`), create an admin account from
 `backend/` once the backend's dependencies are installed (step 2):
 `python -m tools.create_admin --email you@example.com --name "Your Name"`.
 
+### Option A: run everything with Docker
+
+With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running
+and `backend/.env` filled in (see the table in step 2), from the repo root:
+
+```bash
+docker compose up --build       # first build ~10-20 min (PyTorch + CLIP models); later builds reuse layers
+```
+
+Open `http://localhost:8080`. The backend needs ~30s after start to load the
+models. `docker compose down` stops it; after changing code, run
+`docker compose up --build` again. nginx in the frontend container forwards
+`/api/*` to the backend, so no `frontend/.env` or CORS setup is needed, and
+uploads are kept in `backend/uploads/` (shared with a local run).
+
+For day-to-day coding the two-terminal setup below (steps 2 and 3) is
+quicker, since it reloads on every save.
+
+### Option B: run the backend and frontend directly
+
 ### 2. Backend
 
 ```bash
