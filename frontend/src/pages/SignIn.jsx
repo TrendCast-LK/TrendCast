@@ -68,24 +68,13 @@ export default function SignIn() {
             <h1 className="font-headline-lg text-headline-lg text-on-surface mb-2 tracking-tight">
               TrendCast
             </h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Predictive Brilliance for Creators
-            </p>
           </div>
 
           <div className="space-y-6">
-            <button
-              className="w-full flex items-center justify-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-lg py-3 px-4 font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors duration-200"
-              type="button"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-outline-variant" />
               <span className="flex-shrink-0 mx-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                or sign in with email
+                Sign in with email
               </span>
               <div className="flex-grow border-t border-outline-variant" />
             </div>
