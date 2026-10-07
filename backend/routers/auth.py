@@ -12,7 +12,14 @@ from models import (
 )
 from routers.channel import refresh_user_channel
 from routers.notifications import create_notification
-from security import create_access_token, get_current_user, get_user_by_id, hash_password, verify_password
+from security import (
+    ACCOUNT_DISABLED,
+    create_access_token,
+    get_current_user,
+    get_user_by_id,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +31,7 @@ INSERT_USER_SQL = """
 
 SELECT_BY_EMAIL_SQL = """
     SELECT id, full_name, email, password_hash, subscribers, monthly_views,
-           channel_url, channel_data, channel_fetch_error, created_at
+           channel_url, channel_data, channel_fetch_error, created_at, is_active
     FROM users
     WHERE email = %(email)s
 """
@@ -96,6 +103,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = dict(zip(columns, row))
     if not verify_password(form_data.password, user["password_hash"]):
         raise invalid_credentials
+    # Checked after the password, so only the account holder learns it is disabled.
+    if not user["is_active"]:
+        raise HTTPException(status_code=403, detail=ACCOUNT_DISABLED)
 
     return AuthResponse(access_token=create_access_token(user["id"]), user=user_out(user))
 

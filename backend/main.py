@@ -17,7 +17,7 @@ from models import (
     Video,
     ViewTimeseries,
 )
-from routers import auth, channel, dashboard, notifications, predictions, trends
+from routers import admin, auth, channel, dashboard, notifications, predictions, trends
 from storage import UPLOADS_DIR, ensure_uploads_dir
 
 
@@ -62,6 +62,7 @@ app.include_router(notifications.router)
 app.include_router(dashboard.router)
 app.include_router(trends.router)
 app.include_router(predictions.router)
+app.include_router(admin.router)
 
 TIMESERIES_BY_VIDEO_SQL = """
     SELECT

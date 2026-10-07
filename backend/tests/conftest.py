@@ -35,6 +35,7 @@ MIGRATION_002 = SCHEMA_DIR / "migrations" / "002_add_video_metadata.sql"
 MIGRATION_003 = SCHEMA_DIR / "migrations" / "003_notifications_type_check.sql"
 MIGRATION_004 = SCHEMA_DIR / "migrations" / "004_enable_row_level_security.sql"
 MIGRATION_005 = SCHEMA_DIR / "migrations" / "005_channel_history_cache.sql"
+MIGRATION_006 = SCHEMA_DIR / "migrations" / "006_admin_dashboard.sql"
 
 # Importable helpers that live in backend/ (tools.*); config.py is only imported by the `backend` fixture.
 sys.path.insert(0, str(BACKEND_DIR))
@@ -213,7 +214,7 @@ def backend(pg_server):
     import channel_cache
     import config
     import db
-    from routers import auth, channel, dashboard, notifications, predictions, trends
+    from routers import admin, auth, channel, dashboard, notifications, predictions, trends
     import storage
 
     # A real .env must never win over the disposable server.
@@ -222,12 +223,12 @@ def backend(pg_server):
     from fastapi import FastAPI
 
     app = FastAPI()
-    for module in (auth, channel, dashboard, notifications, predictions, trends):
+    for module in (admin, auth, channel, dashboard, notifications, predictions, trends):
         app.include_router(module.router)
 
     yield SimpleNamespace(
         app=app, db=db, storage=storage, inference=sys.modules["inference"], channel_cache=channel_cache,
-        channel_router=channel, predictions_router=predictions,
+        channel_router=channel, predictions_router=predictions, admin_router=admin,
     )
 
     db.pool.closeall()

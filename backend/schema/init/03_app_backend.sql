@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS users (
 
     created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
 
+    -- FALSE = disabled from the admin dashboard: login and every authenticated
+    -- request are refused. Last so migration 006's ADD COLUMN matches a fresh build.
+    is_active               BOOLEAN         NOT NULL DEFAULT TRUE,
+
     CONSTRAINT chk_users_subscribers_positive      CHECK (subscribers >= 0),
     CONSTRAINT chk_users_monthly_views_positive    CHECK (monthly_views >= 0)
 );

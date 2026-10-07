@@ -84,14 +84,19 @@ large *training* data is left out (see [Training data](#training-data-not-in-the
 ### 1. Set up the database
 
 Apply the SQL files in [backend/schema/init/](backend/schema/init/)
-in order (`01` → `04`). `03_app_backend.sql` creates the `users`, `predictions`
-and `notifications` tables the app needs.
+in order (`01` → `06`). `03_app_backend.sql` creates the `users`, `predictions`
+and `notifications` tables the app needs; `06_admin.sql` adds the admin
+dashboard's accounts and audit log.
 
 ```bash
 for f in backend/schema/init/0*.sql; do psql "$SUPABASE_DB_URL" -f "$f"; done
 ```
 
 (Without `psql`, paste each file into the Supabase SQL editor.)
+
+To use the admin dashboard (`/admin/login`), create an admin account from
+`backend/` once the backend's dependencies are installed (step 2):
+`python -m tools.create_admin --email you@example.com --name "Your Name"`.
 
 ### 2. Backend
 

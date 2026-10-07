@@ -8,7 +8,9 @@ the core tables.
 import pytest
 
 import db_helpers as h
-from conftest import INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005, apply_sql
+from conftest import (
+    INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005, MIGRATION_006, apply_sql,
+)
 
 BIG, TXT, TS = "bigint", "text", "timestamp with time zone"
 
@@ -64,6 +66,7 @@ EXPECTED_COLUMNS = {
         "channel_data": "jsonb",
         "channel_fetch_error": TXT,
         "created_at": TS,
+        "is_active": "boolean",
     },
     "predictions": {
         "id": BIG,
@@ -117,6 +120,24 @@ EXPECTED_COLUMNS = {
         "image_embedding": "real[]",
         "encoded_at": TS,
     },
+    "admins": {
+        "id": BIG,
+        "full_name": "character varying(255)",
+        "email": "character varying(255)",
+        "password_hash": "character varying(255)",
+        "is_active": "boolean",
+        "last_login_at": TS,
+        "created_at": TS,
+    },
+    "admin_audit_log": {
+        "id": BIG,
+        "admin_id": BIG,
+        "action": "character varying(64)",
+        "target_type": "character varying(32)",
+        "target_id": BIG,
+        "details": "jsonb",
+        "created_at": TS,
+    },
 }
 
 EXPECTED_INDEXES = {
@@ -127,6 +148,7 @@ EXPECTED_INDEXES = {
     "idx_view_timeseries_video_scraped", "idx_view_timeseries_scraped_at",
     "idx_users_email", "idx_predictions_user_created",
     "idx_notifications_user_created", "idx_notifications_user_unread",
+    "idx_admin_audit_log_created", "idx_admin_audit_log_target",
 }
 
 EXPECTED_CONSTRAINTS = {
@@ -140,6 +162,7 @@ EXPECTED_CONSTRAINTS = {
     "pk_channel_history_videos", "fk_channel_history_videos_channel",
     "chk_channel_history_videos_view_count", "chk_channel_history_videos_text_dim",
     "chk_channel_history_videos_image_dim",
+    "chk_admins_email_lowercase", "fk_admin_audit_log_admin",
 }
 
 VIEW_COLUMNS = {
@@ -158,7 +181,7 @@ ARCHIVE_TABLES = ["channel_stats_archive", "videos_archive", "view_timeseries_ar
 # ---------------------------------------------------------------------------
 
 def test_init_scripts_are_discovered():
-    assert [p.name[:2] for p in INIT_SCRIPTS] == ["01", "02", "03", "04", "05"]
+    assert [p.name[:2] for p in INIT_SCRIPTS] == ["01", "02", "03", "04", "05", "06"]
 
 
 def test_fresh_build_applies_scripts_in_order(create_database):
@@ -238,7 +261,7 @@ def _seed_all_tables(cur):
 
 DATA_TABLES = ["channel_stats", "videos", "view_timeseries", "users", "predictions", "notifications"]
 
-RERUN_SCRIPTS = [pytest.param(p, id=p.name) for p in [*INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005]]
+RERUN_SCRIPTS = [pytest.param(p, id=p.name) for p in [*INIT_SCRIPTS, MIGRATION_002, MIGRATION_003, MIGRATION_004, MIGRATION_005, MIGRATION_006]]
 
 
 @pytest.mark.parametrize("script", RERUN_SCRIPTS)
@@ -352,6 +375,18 @@ def test_migration_005_adds_the_channel_history_cache_to_a_legacy_db(cur, create
         lcur.execute("DROP TABLE channel_history_videos, channel_history_cache")
     legacy.commit()
     apply_sql(legacy, MIGRATION_005)
+    with legacy.cursor() as lcur:
+        assert h.schema_fingerprint(lcur) == h.schema_fingerprint(cur)
+
+
+def test_migration_006_adds_the_admin_dashboard_to_a_legacy_db(cur, create_database):
+    """A database created before the admin dashboard, plus 006, equals a fresh build."""
+    legacy = create_database()
+    with legacy.cursor() as lcur:
+        lcur.execute("DROP TABLE admin_audit_log, admins")
+        lcur.execute("ALTER TABLE users DROP COLUMN is_active")
+    legacy.commit()
+    apply_sql(legacy, MIGRATION_006)
     with legacy.cursor() as lcur:
         assert h.schema_fingerprint(lcur) == h.schema_fingerprint(cur)
 

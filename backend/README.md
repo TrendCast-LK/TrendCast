@@ -61,6 +61,8 @@ it's ready.
 | `routers/predictions.py` | Create/list/get/delete predictions — this is what calls `inference.py` |
 | `routers/dashboard.py`, `routers/trends.py` | Summary stats for the dashboard and trends pages |
 | `routers/notifications.py` | List/read notifications |
+| `routers/admin.py` | Admin dashboard: separate admin login, overview stats, user management, audit log |
+| `tools/create_admin.py` | CLI that creates/resets/disables admin accounts (the only way to make one) |
 
 ## Endpoints
 
@@ -85,6 +87,20 @@ it's ready.
 | `GET /dashboard/summary`, `GET /trends/summary` | Stats for those two frontend pages |
 | `GET/POST/DELETE /predictions` | Saved predictions (this is what runs the model) |
 | `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | In-app notifications |
+
+**Admin dashboard (needs an admin token from `POST /admin/auth/login`; app-user tokens are rejected):**
+
+| Method & path | What it does |
+| --- | --- |
+| `POST /admin/auth/login`, `GET /admin/auth/me` | Admin sign-in (5 failed tries per email per 15 min, then 429) |
+| `GET /admin/overview` | User/prediction counts, 30-day daily series, model split since `ensemble_since`, model status |
+| `GET /admin/users`, `GET /admin/users/{id}` | Search/filter/paginate users; one user's profile, channel, predictions, admin activity |
+| `POST /admin/users/{id}/disable`, `/enable` | Lock a user out (login and every request get 403) or let them back in |
+| `POST /admin/users/{id}/refresh-channel`, `/clear-fetch-error` | Channel maintenance for a user |
+| `DELETE /admin/users/{id}` | Delete a user and their data; body `{"confirm_email": "<their email>"}` |
+| `GET /admin/audit-log` | Every admin login and change, newest first |
+
+Create the first admin after applying migration 006: `python -m tools.create_admin --email you@example.com --name "Your Name"`.
 
 ## Test it's working
 
@@ -111,7 +127,7 @@ The response includes a `range_7d` with low/high bounds (computed from
 - **Confidence is a heuristic, not a model output.** `predictions.py` sets it
   to a fixed 0.85 or 0.55 depending on whether a real channel was matched
   — the models don't produce a calibrated uncertainty estimate.
-- **No admin/monitoring page.** There's no backend support for one either.
+- **Admin dashboard is Phase 1 only.** Overview, users and the activity log exist; a predictions explorer, cache and model pages do not yet. The admin login throttle and the 30s admin-row cache are in-process (per worker).
 - **YouTube API quota.** Fetching channel history on each forecast costs quota.
   The service caches per channel for 6 hours to mitigate this.
 - **First forecast after signup is CatBoost-only.** The channel history cache

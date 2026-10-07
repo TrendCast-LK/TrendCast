@@ -208,3 +208,138 @@ class PredictionOut(BaseModel):
     tau: Optional[float] = None
     used_channel_context: Optional[bool] = None
     created_at: datetime
+
+
+# ---- Admin dashboard ----------------------------------------------------------
+
+
+class AdminOut(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    last_login_at: Optional[datetime] = None
+
+
+class AdminAuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    admin: AdminOut
+
+
+class AdminUserCounts(BaseModel):
+    total: int
+    active: int
+    disabled: int
+    new_7d: int
+    new_30d: int
+    with_channel: int
+    with_fetch_error: int
+
+
+class AdminPredictionCounts(BaseModel):
+    total: int
+    complete: int
+    draft: int
+    last_7d: int
+
+
+class AdminForecastSplit(BaseModel):
+    """Complete predictions by model since `since` (None = all time)."""
+    since: Optional[datetime] = None
+    ensemble: int
+    catboost_only: int
+
+
+class AdminDailyPoint(BaseModel):
+    day: date
+    signups: int
+    predictions: int
+    ensemble: int
+    catboost_only: int
+
+
+class AdminSystemStatus(BaseModel):
+    database: str = "ok"
+    model_ready: bool
+    model_error: Optional[str] = None
+    model_device: Optional[str] = None
+    model_load_time_seconds: Optional[float] = None
+
+
+class AdminOverview(BaseModel):
+    users: AdminUserCounts
+    predictions: AdminPredictionCounts
+    forecasts: AdminForecastSplit
+    daily: List[AdminDailyPoint]
+    system: AdminSystemStatus
+
+
+class AdminUserRow(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    subscribers: int
+    channel_url: Optional[str] = None
+    channel_title: Optional[str] = None
+    channel_thumbnail_url: Optional[str] = None
+    has_fetch_error: bool
+    prediction_count: int
+    last_prediction_at: Optional[datetime] = None
+
+
+class AdminUserList(BaseModel):
+    total: int
+    items: List[AdminUserRow]
+
+
+class AdminPredictionRow(BaseModel):
+    id: int
+    title: str
+    category: Optional[str] = None
+    status: str
+    predicted_views: Optional[int] = None
+    confidence: Optional[float] = None
+    used_channel_context: Optional[bool] = None
+    created_at: datetime
+
+
+class AdminAuditEntry(BaseModel):
+    id: int
+    admin_id: Optional[int] = None
+    admin_email: Optional[str] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[int] = None
+    details: dict
+    created_at: datetime
+
+
+class AdminAuditList(BaseModel):
+    total: int
+    items: List[AdminAuditEntry]
+
+
+class AdminUserDetail(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    subscribers: int
+    monthly_views: int
+    channel: ChannelOut
+    prediction_count: int
+    complete_count: int
+    draft_count: int
+    notification_count: int
+    unread_notification_count: int
+    recent_predictions: List[AdminPredictionRow]
+    recent_activity: List[AdminAuditEntry]
+
+
+class AdminDeleteUserRequest(BaseModel):
+    # Must equal the user's email: a server-side guard against deleting the wrong row.
+    confirm_email: str
+
