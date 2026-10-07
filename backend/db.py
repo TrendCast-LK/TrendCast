@@ -21,8 +21,28 @@ from config import SUPABASE_DB_URL
 
 MAX_CONNECTIONS = 10
 CONNECTION_WAIT_SECONDS = 30
+# Connections opened at startup (in the background, see warm_pool) so the
+# first concurrent requests don't each pay for a new connection.
+WARM_CONNECTIONS = 3
 
-pool = ThreadedConnectionPool(minconn=1, maxconn=MAX_CONNECTIONS, dsn=SUPABASE_DB_URL)
+
+class KeepIdlePool(ThreadedConnectionPool):
+    """A ThreadedConnectionPool that keeps returned connections open.
+
+    psycopg2 closes any connection handed back while minconn are already idle,
+    and opens only minconn at creation. With minconn=1 that meant every request
+    overlapping another opened a fresh connection and closed it afterwards;
+    against a remote Supabase pooler a new connection can take tens of
+    seconds. Opening one connection at creation and then raising minconn to
+    maxconn keeps every connection once opened.
+    """
+
+    def __init__(self, maxconn: int, *args, **kwargs):
+        super().__init__(1, maxconn, *args, **kwargs)
+        self.minconn = maxconn
+
+
+pool = KeepIdlePool(MAX_CONNECTIONS, dsn=SUPABASE_DB_URL)
 _slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
 
 
@@ -40,6 +60,9 @@ def get_connection():
         raise RuntimeError("timed out waiting for a free database connection")
     try:
         conn = pool.getconn()
+        if conn.closed:  # idle connections are kept now, so one may have been closed meanwhile
+            pool.putconn(conn, close=True)
+            conn = pool.getconn()
         try:
             _init_connection(conn)
             yield conn
@@ -62,3 +85,24 @@ def get_cursor(commit: bool = False):
             raise
         finally:
             cur.close()
+
+
+
+def warm_pool(count: int = WARM_CONNECTIONS) -> None:
+    """Opens `count` connections in parallel and leaves them idle in the pool.
+    Best effort, for a background thread at startup: each thread holds its
+    connection until all have one, so they are distinct connections."""
+    barrier = threading.Barrier(count, timeout=CONNECTION_WAIT_SECONDS * 4)
+
+    def _open_one():
+        try:
+            with get_connection():
+                barrier.wait()
+        except Exception:  # noqa: BLE001 - a failed warm only means a slower first request
+            barrier.abort()
+
+    threads = [threading.Thread(target=_open_one, daemon=True) for _ in range(count)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()

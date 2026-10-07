@@ -1,4 +1,5 @@
 import logging
+import threading
 from contextlib import asynccontextmanager
 from typing import List
 
@@ -7,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 import channel_cache
-from db import get_cursor
+from db import get_cursor, warm_pool
 from inference import ThumbnailDownloadError, get_state, load_artifacts, run_forecast
 from models import (
     ChannelStatsEnriched,
@@ -28,6 +29,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per Hugging Fac
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Opening DB connections overlaps the ~30s model load instead of landing
+    # on the first requests.
+    threading.Thread(target=warm_pool, daemon=True, name="warm-db-pool").start()
     load_artifacts()
     yield
 

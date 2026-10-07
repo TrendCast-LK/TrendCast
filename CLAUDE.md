@@ -18,6 +18,7 @@ Every table has row-level security enabled with no policies, so Supabase's REST 
 - Bulk writes use `psycopg2.extras.execute_batch` with named-parameter SQL templates (`%(name)s`), followed by an explicit `conn.commit()`.
 - When writing to multiple tables that Job 1 (channel ingestion) also touches, rows are sorted deterministically by primary key (e.g. `video_id`) before the batch write to avoid Postgres deadlocks between concurrently running jobs.
 - The FastAPI backend in `backend/` uses **its own Supabase database**, separate from the one the data-collection pipeline wrote to. It reads `SUPABASE_DB_URL` from `backend/.env` and connects through [backend/db.py](backend/db.py): a `ThreadedConnectionPool` (FastAPI runs sync endpoints on threads) with a semaphore so bursts wait for a free connection instead of failing. That database holds the full schema above, including the pipeline tables that `/channels` and `/videos` read.
+- The pool (`db.KeepIdlePool`) keeps every connection it has opened: psycopg2's pool closes returned connections beyond `minconn`, and opening one against the remote Supabase pooler can take tens of seconds. `db.warm_pool()` opens a few in the background at startup.
 
 ### Core tables
 
