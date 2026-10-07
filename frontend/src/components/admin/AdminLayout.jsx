@@ -5,6 +5,8 @@ import { useAdminAuth } from "../../context/AdminAuthContext";
 const navItems = [
   { key: "overview", label: "Overview", icon: "space_dashboard", to: "/admin" },
   { key: "users", label: "Users", icon: "group", to: "/admin/users" },
+  { key: "predictions", label: "Predictions", icon: "query_stats", to: "/admin/predictions" },
+  { key: "cache", label: "Channel cache", icon: "cached", to: "/admin/cache" },
   { key: "activity", label: "Activity log", icon: "history", to: "/admin/activity" },
 ];
 

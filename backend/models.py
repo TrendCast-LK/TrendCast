@@ -343,3 +343,86 @@ class AdminDeleteUserRequest(BaseModel):
     # Must equal the user's email: a server-side guard against deleting the wrong row.
     confirm_email: str
 
+
+class AdminPredictionListRow(AdminPredictionRow):
+    user_id: int
+    user_email: str
+    user_name: str
+    thumbnail_url: Optional[str] = None
+
+
+class AdminHistogramBucket(BaseModel):
+    low: float
+    high: float
+    count: int
+
+
+class AdminCategoryCount(BaseModel):
+    category: str
+    count: int
+
+
+class AdminPredictionSummary(BaseModel):
+    """Over every prediction matching the filters, not just the page."""
+    count: int
+    complete: int
+    avg_confidence: Optional[float] = None
+    median_views: Optional[float] = None
+    p90_views: Optional[float] = None
+    views_histogram: List[AdminHistogramBucket]  # log10 buckets of complete predictions' views
+    confidence_histogram: List[AdminHistogramBucket]  # tenths of 0-1, empty buckets included
+    categories: List[AdminCategoryCount]
+
+
+class AdminPredictionList(BaseModel):
+    total: int
+    items: List[AdminPredictionListRow]
+    summary: AdminPredictionSummary
+    all_categories: List[str]
+
+
+class AdminPredictionDetail(PredictionOut):
+    user_id: int
+    user_email: str
+    user_name: str
+    dataset_url: Optional[str] = None
+
+
+class AdminCacheRow(BaseModel):
+    channel_id: str
+    channel_title: Optional[str] = None
+    linked_users: int
+    has_entry: bool  # FALSE: a user links this channel but it was never warmed or failed before a row existed
+    status: str  # fresh | stale | never
+    encoder: Optional[str] = None
+    encoder_matches: Optional[bool] = None  # None while the model isn't loaded
+    warmed_at: Optional[datetime] = None
+    last_error: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    video_count: int
+    newest_video_at: Optional[datetime] = None
+
+
+class AdminCacheSummary(BaseModel):
+    total: int
+    fresh: int
+    stale: int
+    never: int
+    with_error: int
+    # Complete predictions in the last 7 days (and since the ensemble launch)
+    # that found warm channel history, of all complete ones.
+    hits_7d: int
+    forecasts_7d: int
+
+
+class AdminCacheList(BaseModel):
+    total: int
+    items: List[AdminCacheRow]
+    summary: AdminCacheSummary
+    model_ready: bool
+    ttl_hours: float
+
+
+class AdminWarmResult(BaseModel):
+    queued: int
+    channel_ids: List[str]

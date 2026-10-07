@@ -159,6 +159,13 @@ ADMIN_ROUTES = [
     ("post", "/admin/users/1/clear-fetch-error"),
     ("delete", "/admin/users/1"),
     ("get", "/admin/audit-log"),
+    ("get", "/admin/predictions"),
+    ("get", "/admin/predictions/1"),
+    ("delete", "/admin/predictions/1"),
+    ("get", "/admin/cache"),
+    ("post", "/admin/cache/warm-stale"),
+    ("post", "/admin/cache/UCx/warm"),
+    ("delete", "/admin/cache/UCx"),
 ]
 
 

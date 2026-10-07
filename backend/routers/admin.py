@@ -1,5 +1,6 @@
 """Admin dashboard API: its own login, platform overview, user management and
-the audit log.
+the audit log. Predictions and the channel history cache have their own
+modules (admin_predictions.py, admin_cache.py), mounted under this router.
 
 Admins are separate accounts (the `admins` table, created with
 `python -m tools.create_admin`) with their own tokens; see security.py. Every
@@ -32,6 +33,7 @@ from models import (
     AdminUserDetail,
     AdminUserList,
 )
+from routers import admin_cache, admin_predictions
 from routers.admin_common import AUDIT_ROWS_SQL, like_pattern, record_action
 from routers.channel import channel_out, refresh_user_channel
 from security import create_admin_token, get_current_admin, verify_password
@@ -480,3 +482,7 @@ def list_audit_log(
         total, items = cur.fetchone()
     return AdminAuditList(total=total, items=items)
 
+
+# Mounted last: include_router copies the sub-routers' routes as they are now.
+router.include_router(admin_predictions.router)
+router.include_router(admin_cache.router)

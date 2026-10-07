@@ -81,3 +81,35 @@ export function deleteUser(id, confirmEmail) {
 export function listAuditLog({ action, limit, offset } = {}) {
   return adminRequest(`/admin/audit-log${query({ action, limit, offset })}`);
 }
+
+// ---- Predictions explorer -------------------------------------------------------
+
+export function listAdminPredictions(filters = {}) {
+  return adminRequest(`/admin/predictions${query(filters)}`);
+}
+
+export function getAdminPrediction(id) {
+  return adminRequest(`/admin/predictions/${id}`);
+}
+
+export function deleteAdminPrediction(id) {
+  return adminRequest(`/admin/predictions/${id}`, { method: "DELETE" });
+}
+
+// ---- Channel history cache --------------------------------------------------------
+
+export function listCache({ q, status, ensembleSince, limit, offset } = {}) {
+  return adminRequest(`/admin/cache${query({ q, status, ensemble_since: ensembleSince, limit, offset })}`);
+}
+
+export function warmChannel(channelId) {
+  return adminRequest(`/admin/cache/${encodeURIComponent(channelId)}/warm`, { method: "POST" });
+}
+
+export function warmStaleChannels() {
+  return adminRequest("/admin/cache/warm-stale", { method: "POST" });
+}
+
+export function purgeChannel(channelId) {
+  return adminRequest(`/admin/cache/${encodeURIComponent(channelId)}`, { method: "DELETE" });
+}

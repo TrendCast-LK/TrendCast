@@ -61,7 +61,8 @@ it's ready.
 | `routers/predictions.py` | Create/list/get/delete predictions — this is what calls `inference.py` |
 | `routers/dashboard.py`, `routers/trends.py` | Summary stats for the dashboard and trends pages |
 | `routers/notifications.py` | List/read notifications |
-| `routers/admin.py` | Admin dashboard: separate admin login, overview stats, user management, audit log |
+| `routers/admin.py` | Admin dashboard: separate admin login, overview stats, user management, audit log; mounts the two below |
+| `routers/admin_predictions.py`, `routers/admin_cache.py` | Admin predictions explorer; admin view of the channel history cache |
 | `tools/create_admin.py` | CLI that creates/resets/disables admin accounts (the only way to make one) |
 
 ## Endpoints
@@ -99,6 +100,9 @@ it's ready.
 | `POST /admin/users/{id}/refresh-channel`, `/clear-fetch-error` | Channel maintenance for a user |
 | `DELETE /admin/users/{id}` | Delete a user and their data; body `{"confirm_email": "<their email>"}` |
 | `GET /admin/audit-log` | Every admin login and change, newest first |
+| `GET /admin/predictions`, `GET/DELETE /admin/predictions/{id}` | All users' predictions with filters (text, status, model, category, user, dates) and a summary of the matching set (views/confidence histograms, categories) |
+| `GET /admin/cache` | Channel history cache entries plus user-linked channels with none: fresh / stale / never warmed, errors, 7-day hit rate |
+| `POST /admin/cache/{channel_id}/warm`, `POST /admin/cache/warm-stale`, `DELETE /admin/cache/{channel_id}` | Re-warm one channel or up to 25 stale ones (503 until the model loads); purge an entry |
 
 Create the first admin after applying migration 006: `python -m tools.create_admin --email you@example.com --name "Your Name"`.
 
@@ -127,7 +131,7 @@ The response includes a `range_7d` with low/high bounds (computed from
 - **Confidence is a heuristic, not a model output.** `predictions.py` sets it
   to a fixed 0.85 or 0.55 depending on whether a real channel was matched
   — the models don't produce a calibrated uncertainty estimate.
-- **Admin dashboard is Phase 1 only.** Overview, users and the activity log exist; a predictions explorer, cache and model pages do not yet. The admin login throttle and the 30s admin-row cache are in-process (per worker).
+- **Admin dashboard has no model/inference page yet** (latency, error rate, artifact reload). The admin login throttle and the 30s admin-row cache are in-process (per worker).
 - **YouTube API quota.** Fetching channel history on each forecast costs quota.
   The service caches per channel for 6 hours to mitigate this.
 - **First forecast after signup is CatBoost-only.** The channel history cache

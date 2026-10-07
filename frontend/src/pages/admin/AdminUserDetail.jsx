@@ -266,7 +266,14 @@ export default function AdminUserDetail() {
       </section>
 
       <section className="glass-panel rounded-2xl overflow-hidden">
-        <h3 className="font-headline-md text-headline-md text-on-background px-6 pt-6 pb-3">Recent predictions</h3>
+        <div className="flex items-center justify-between px-6 pt-6 pb-3">
+          <h3 className="font-headline-md text-headline-md text-on-background">Recent predictions</h3>
+          {user.prediction_count > 0 && (
+            <Link to={`/admin/predictions?user_id=${user.id}`} className="font-label-md text-label-md text-primary hover:underline">
+              View all {user.prediction_count} in the explorer
+            </Link>
+          )}
+        </div>
         {user.recent_predictions.length === 0 ? (
           <p className="px-6 pb-6 text-on-surface-variant">No predictions yet.</p>
         ) : (
@@ -285,7 +292,11 @@ export default function AdminUserDetail() {
               <tbody>
                 {user.recent_predictions.map((p) => (
                   <tr key={p.id} className="border-t border-outline-variant/30">
-                    <td className="px-6 py-3 text-on-surface">{p.title}</td>
+                    <td className="px-6 py-3">
+                      <Link to={`/admin/predictions/${p.id}`} className="text-on-surface hover:text-primary">
+                        {p.title}
+                      </Link>
+                    </td>
                     <td className="px-6 py-3">{p.category || "—"}</td>
                     <td className="px-6 py-3 capitalize">{p.status}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{formatCompact(p.predicted_views)}</td>

@@ -17,6 +17,10 @@ const ACTION_LABELS = {
   "user.refresh_channel": "Refreshed channel",
   "user.clear_fetch_error": "Cleared fetch error",
   "user.delete": "Deleted user",
+  "prediction.delete": "Deleted prediction",
+  "cache.warm": "Warmed channel cache",
+  "cache.warm_stale": "Warmed stale channels",
+  "cache.purge": "Purged channel cache",
 };
 
 export function actionLabel(action) {
