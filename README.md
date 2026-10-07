@@ -9,49 +9,34 @@ histories from tracked channels.
 
 ## How it works, in short
 
-1. A pipeline pulls channel and video stats from YouTube into a database.
-2. That data trains a model offline (title + thumbnail + channel stats →
-   predicted view growth).
-3. A backend loads the trained model and serves forecasts.
-4. A web dashboard lets creators sign up, connect their channel, and run
+1. A model was trained offline on view histories collected from tracked
+   channels (title + thumbnail + channel history → predicted view growth).
+2. A backend loads the trained model and serves forecasts.
+3. A web dashboard lets creators sign up, connect their channel, and run
    predictions.
 
 ## Architecture
 
 ```
-YouTube Data API v3
-        │
-        ▼
-GitHub Actions (scheduled jobs, plain Python + Postgres — no Kafka/Spark)
-  • Job 1: channel + new-video ingestion, every 12h
-  • Job 2: view-count polling, every 5 min (faster for brand-new videos)
-  • Job 3: caches title/thumbnail embeddings, every 12h
-        │
-        ▼
-Supabase / PostgreSQL
-  channel_stats · videos · view_timeseries · video_features
-  users · predictions · notifications
-        │
-        ├──────────────► ml/  (offline, run by hand)
-        │                 extract → fit curves → build features
-        │                 → train XGBoost models
-        │                         │
-        │                         ▼ (model files, copied by hand)
-        ▼
-backend/ (FastAPI)  ──serves──►  frontend/ (React, "TrendCast")
-  loads the trained model,           sign up, connect a channel,
-  serves /forecast + full            run predictions, see trends
-  app API (auth, predictions,
-  notifications)
+YouTube Data API v3 ──► backend/ (FastAPI) ──serves──► frontend/ (React)
+  (user's channel +       loads the trained         sign up, connect a
+   recent uploads)        ensemble, serves           channel, run
+                          /forecast + app API        predictions, see trends
+                                │
+                                ▼
+                      Supabase / PostgreSQL
+                      users · predictions · notifications
+                      channel_history_cache · admins
+
+ensemble_artifacts/  ◄── trained offline, exported by hand
 ```
 
-All parts share one database, via the `SUPABASE_DB_URL` connection string.
+The backend reaches the database through the `SUPABASE_DB_URL` connection string.
 
 ## Tech stack
 
 | Layer | Tech |
 | --- | --- |
-| Data collection | GitHub Actions (cron) + Python, YouTube Data API v3 |
 | Database | Supabase (PostgreSQL) |
 | Model training | Python, CatBoost, sentence-transformers (CLIP + multilingual CLIP for embeddings), scikit-learn PCA |
 | Model serving | FastAPI, CatBoost, CLIP embeddings, cached PCA transforms, 6h channel history cache |
@@ -61,7 +46,6 @@ All parts share one database, via the `SUPABASE_DB_URL` connection string.
 
 | Folder | What it is |
 | --- | --- |
-| [youtube-etl-pipeline/](youtube-etl-pipeline/README.md) | Data collection jobs (GitHub Actions), database schema |
 | [backend/](backend/README.md) | FastAPI service — serves forecasts, auth, predictions, notifications |
 | [ml/](ml/README.md) | Offline pipeline that trains the forecast model |
 | [frontend/](frontend/README.md) | React dashboard ("TrendCast") |
@@ -190,7 +174,6 @@ the app**. To retrain, regenerate them with the pipeline in
 
 **Working today:**
 
-- All three data-collection jobs run live on GitHub Actions.
 - The forecast model is trained offline with CatBoost (`artifacts/export_artifacts.py`):
   - Six models: magnitude (V_inf multiplier), shape family (logistic vs power), and four shape parameters (k, t0, c, theta).
   - Reference validation: **0.24% mean relative error** on 20 held-out rows.
@@ -210,10 +193,8 @@ the app**. To retrain, regenerate them with the pipeline in
 **Not built:**
 
 - No admin or monitoring dashboard. The frontend only has creator-facing pages.
-- No automated test suite for the backend or frontend. The ETL pipeline has one small test file (`youtube-etl-pipeline/tests/test_key_pool.py`).
 
 **Notes:**
 
 - A prediction's `confidence` number is a heuristic (fixed at 0.85 or 0.55 depending on whether a real channel match was found), not a model uncertainty estimate. See `backend/routers/predictions.py`.
 - The uncertainty range in the forecast response is a fixed-width approximation based on residual_std from training, not a calibrated prediction interval.
-- ETL folder note: `youtube-etl-pipeline/` also contains an older Kafka + Spark + Airflow setup (via `docker-compose.yml`). That is **not** what runs in production — see that folder's README for details.

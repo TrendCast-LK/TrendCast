@@ -14,13 +14,13 @@ Every table has row-level security enabled with no policies, so Supabase's REST 
 ### Connection pattern
 
 - Connection string comes from the `SUPABASE_DB_URL` environment variable (a standard Postgres connection URL).
-- ETL jobs connect with plain `psycopg2.connect(db_url)` — see [youtube_extractor/job2_timeseries_collector.py](youtube-etl-pipeline/youtube_extractor/job2_timeseries_collector.py) `main()`.
 - Bulk writes use `psycopg2.extras.execute_batch` with named-parameter SQL templates (`%(name)s`), followed by an explicit `conn.commit()`.
-- When writing to multiple tables that Job 1 (channel ingestion) also touches, rows are sorted deterministically by primary key (e.g. `video_id`) before the batch write to avoid Postgres deadlocks between concurrently running jobs.
 - The FastAPI backend in `backend/` uses **its own Supabase database**, separate from the one the data-collection pipeline wrote to. It reads `SUPABASE_DB_URL` from `backend/.env` and connects through [backend/db.py](backend/db.py): a `ThreadedConnectionPool` (FastAPI runs sync endpoints on threads) with a semaphore so bursts wait for a free connection instead of failing. That database holds the full schema above, including the pipeline tables that `/channels` and `/videos` read.
 - The pool (`db.KeepIdlePool`) keeps every connection it has opened: psycopg2's pool closes returned connections beyond `minconn`, and opening one against the remote Supabase pooler can take tens of seconds. `db.warm_pool()` opens a few in the background at startup. Admin endpoints are written as one SQL statement per read (JSON-aggregated) to keep round trips down.
 
 ### Core tables
+
+These were written by a YouTube data-collection pipeline (ETL) that has been removed from this repo. The tables and the read-only `/channels` and `/videos` endpoints remain, but nothing populates them any more.
 
 **`channel_stats`** — one row per YouTube channel (PK: `channel_id`, format `UCxxxxxxxxxxxxxxxxxxxxxx`).
 - `channel_title`, `channel_description`, `published_at` (channel creation time), `country` (ISO 3166-1 alpha-2)
@@ -52,14 +52,14 @@ Every table has row-level security enabled with no policies, so Supabase's REST 
 
 ### App-layer tables (backend/)
 
-Added by `03_app_backend.sql`, owned by the FastAPI backend (not the ETL pipeline). Plain `BIGSERIAL` PKs, no UUIDs.
+Added by `03_app_backend.sql`, owned by the FastAPI backend. Plain `BIGSERIAL` PKs, no UUIDs.
 
 **`users`** — one row per app account (email/password auth, JWT issued on login).
 - `full_name`, `email` (unique), `password_hash` (bcrypt)
 - `subscribers`, `monthly_views` (`BIGINT`, self-reported baseline used as prediction context — editable in Settings, not scraped)
 - `is_active` — FALSE once an admin disables the account: login and every authenticated request return 403 (login checks the password first)
 - `channel_url` (pasted at signup), `channel_data` (`JSONB` snapshot fetched from the YouTube Data API — title, description, thumbnail_url, banner_url, country, published_at, subscriber_count, view_count, video_count, subscriber_hidden, channel_id, fetched_at), `channel_fetch_error`
-- Kept separate from `channel_stats`: that table is the ETL's tracked forecasting-dataset channels, not a per-user profile cache. The forecast does not read `channel_stats`: `backend/inference.py` fetches the channel's recent history from the YouTube API using `channel_data.channel_id`, and `/predictions` returns 400 when the user has no linked channel.
+- Kept separate from `channel_stats`: that table held the removed ETL's tracked forecasting-dataset channels, not a per-user profile cache. The forecast does not read `channel_stats`: `backend/inference.py` fetches the channel's recent history from the YouTube API using `channel_data.channel_id`, and `/predictions` returns 400 when the user has no linked channel.
 - The forecast is a CatBoost + HistAttnV2 ensemble loaded from `ensemble_artifacts/` (see `backend/inference.py`, `backend/histattn.py`). `predictions.used_channel_context` is TRUE only when HistAttnV2 ran on cached channel history; FALSE means a CatBoost-only forecast (cache miss, e.g. right after signup). A failed channel refresh keeps the last good `channel_data` and only sets `channel_fetch_error`. `PUT /channel` changes the linked channel: it resolves the new URL first and returns 400 without touching the row if that fails; on success it replaces `channel_url`/`channel_data`, sets `subscribers` from the new channel (as signup does) and warms the new channel's history cache.
 
 **`predictions`** — one row per saved/run prediction (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
@@ -76,12 +76,3 @@ Added by `03_app_backend.sql`, owned by the FastAPI backend (not the ETL pipelin
 
 **`notifications`** — one row per in-app notification (PK: `id`, FK `user_id` → `users`, `ON DELETE CASCADE`).
 - `type` (`welcome` | `channel_fetch_success` | `channel_fetch_error` | `prediction_complete`, enforced by the `chk_notifications_type` CHECK constraint), `title`, `message`, `read`
-
-### Polling cadence (Job 2)
-
-`job2_timeseries_collector.py` polls due videos every 5 minutes and adjusts `current_interval_hours` by video age (`select_interval_hours`):
-- age ≤ 1h → poll every ~5 min
-- age 1–2h → poll every 15 min
-- age > 2h → poll every 1 hour
-
-Videos missing from the YouTube API response (deleted/privatized) are flagged `status = 'deleted'` with `next_poll_at = NULL` so they drop out of the queue. Note `videos.status` is `VARCHAR(16)` — keep any new status values within that limit.

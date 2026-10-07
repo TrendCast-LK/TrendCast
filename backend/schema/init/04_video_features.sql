@@ -3,9 +3,9 @@
 -- File: backend/schema/init/04_video_features.sql
 -- Purpose: Caches per-video title/thumbnail embeddings so weekly model
 --          retraining doesn't have to re-embed every video from scratch.
---          Populated by youtube_extractor/embed_new_videos.py, which reuses
---          ml/services/title_embedding.py and ml/services/thumbnail_embedding.py
---          so the cached vectors match training-time embeddings exactly.
+--          Was populated by the data-collection pipeline's embed job (since
+--          removed from this repo), using ml/services/title_embedding.py and
+--          ml/services/thumbnail_embedding.py. Nothing writes to it now.
 -- =============================================================================
 
 CREATE EXTENSION IF NOT EXISTS vector;

@@ -19,7 +19,7 @@ pip install -r ml/requirements.txt
 ```
 
 Reads `SUPABASE_DB_URL` from `backend/.env` (same variable and file the
-backend and ETL jobs use — nothing extra to configure here).
+backend uses — nothing extra to configure here).
 
 ## The full pipeline, in order
 
@@ -123,11 +123,6 @@ sensitivity and the channel distribution of the usable set).
 - **Retraining is fully manual.** No scheduled job runs the 9-step pipeline
   above. After you run them, you also run `artifacts/export_artifacts.py`
   to produce the deployment artifacts. Nothing automates either.
-- **The `video_features` embedding cache isn't used here yet.** The ETL
-  side now caches title/thumbnail embeddings in a `video_features` Supabase
-  table (see
-  [../youtube-etl-pipeline/README.md](../youtube-etl-pipeline/README.md))
-  so future retrains don't need to re-embed every video. `embed_titles.py`
-  and `embed_thumbnails.py` still compute embeddings from scratch locally
-  and don't read from that table — wiring them together is planned but not
-  done.
+- **The data-collection pipeline that fed these scripts has been removed.**
+  `extract_dataset.py` reads `channel_stats` / `videos` / `view_timeseries`,
+  which nothing populates any more.

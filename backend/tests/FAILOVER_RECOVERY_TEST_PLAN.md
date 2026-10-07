@@ -1,5 +1,7 @@
 # TrendCast – Failover and Recovery Test Plan
 
+> **Note (2026-10-07):** the ETL pipeline was removed from the repo, and with it the F-06, F-07 and F-08 tests. Section B and the other ETL rows below are retired.
+
 | | |
 |---|---|
 | **System** | TrendCast – YouTube view forecasting web application (FastAPI backend, PostgreSQL on Supabase, React frontend, GitHub Actions ETL) |

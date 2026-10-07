@@ -595,24 +595,6 @@ def test_storage_delete_is_idempotent_and_confined_to_the_uploads_dir(api):
 
 
 @pytest.mark.parametrize(
-    "age, hours", [(0, 0.083), (0.99, 0.083), (1, 0.083), (1.01, 0.25), (2, 0.25), (2.01, 1.0), (500, 1.0)]
-)
-def test_polling_interval_decays_with_video_age(age, hours):
-    etl = BACKEND_DIR.parent / "youtube-etl-pipeline" / "youtube_extractor"
-    pytest.importorskip("googleapiclient")
-    sys.path.insert(0, str(etl))
-    try:
-        spec = importlib.util.spec_from_file_location("job2_under_test", etl / "job2_timeseries_collector.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    except ImportError as exc:
-        pytest.skip(f"ETL job dependencies unavailable: {exc}")
-    finally:
-        sys.path.remove(str(etl))
-    assert module.select_interval_hours(age) == hours
-
-
-@pytest.mark.parametrize(
     "text, seconds",
     [("PT8M32S", 512), ("PT1H", 3600), ("PT1H2M3S", 3723), ("PT45S", 45), ("pt5m", 300)],
 )

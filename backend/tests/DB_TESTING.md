@@ -25,7 +25,7 @@ so the live database cannot be reached. To use another disposable server instead
 | `test_data_quality.py` | E | The read-only data-quality checks catch each planted problem |
 | `test_schema_diff.py` | A6 / F | Schema drift is detected; optional live comparison |
 | `test_backup_restore.py` | F | A `pg_dump` restores to an identical database |
-| `test_failover_recovery.py` | G | Database kill/restart/hang, interrupted ETL, quota and model outages, full disk, corrupt rows, restore after total loss (plan: [FAILOVER_RECOVERY_TEST_PLAN.md](FAILOVER_RECOVERY_TEST_PLAN.md); starts its own Postgres container) |
+| `test_failover_recovery.py` | G | Database kill/restart/hang, quota and model outages, full disk, corrupt rows, restore after total loss (plan: [FAILOVER_RECOVERY_TEST_PLAN.md](FAILOVER_RECOVERY_TEST_PLAN.md); starts its own Postgres container) |
 
 Tests marked `xfail(strict=True)` are known defects with the reason attached.
 They flip to a failure when fixed, which is the cue to delete the marker.

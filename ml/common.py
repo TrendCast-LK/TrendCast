@@ -1,8 +1,7 @@
 """Shared read-only DB access and audit computation for the ml/ scripts.
 
-Connects with the same SUPABASE_DB_URL env var used by backend/ and the ETL
-jobs, loaded from backend/.env the same way
-youtube-etl-pipeline/youtube_extractor/backfill_video_metadata.py does it.
+Connects with the same SUPABASE_DB_URL env var used by backend/, loaded from
+backend/.env.
 All connections opened here are forced read-only at the session level.
 """
 

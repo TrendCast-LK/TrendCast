@@ -1,5 +1,7 @@
 ### 3.1.7 Failover and Recovery Testing
 
+> **Note (2026-10-07):** the ETL pipeline was removed from the repo, and with it the F-06, F-07 and F-08 tests. The ETL rows below record the run they came from.
+
 Failover and recovery testing ensures that TrendCast can fail over and recover from a variety of hardware, software and network malfunctions without undue loss of data or data integrity.
 
 Recovery testing is an antagonistic test process in which the application or system is exposed to extreme conditions, or simulated conditions, to cause a failure, such as a killed process, a lost database connection or a full disk. Recovery processes are then invoked, and the system is monitored and inspected to verify that proper application and data recovery has been achieved.

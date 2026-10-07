@@ -907,7 +907,7 @@ def run_forecast_on_image(
         horizon=int(config.get("horizon_days", 7)),
     )
 
-    # --- uncertainty band (required -- see MODEL_INTEGRATION.md 4.5) --------
+    # --- uncertainty band ---------------------------------------------------
     # residual_std is CatBoost's out-of-sample residual spread; the ensemble's
     # own residual spread was not exported.
     residual_std = float(config.get("residual_std", 1.09))
