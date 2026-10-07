@@ -145,6 +145,19 @@ Open `http://localhost:5173`, sign up with a YouTube channel URL, and run a pred
 Each part's README has the full details — env vars, endpoints, key files,
 known gaps.
 
+## CI
+
+GitHub Actions runs on every pull request and every push to `main`:
+
+- [ci.yml](.github/workflows/ci.yml): backend tests (a throwaway Postgres in
+  Docker, the model stubbed) and the frontend lint and build.
+- [model.yml](.github/workflows/model.yml): loads the real ensemble from
+  `ensemble_artifacts/` and checks it; runs only when the model files or the
+  inference code change.
+
+Backend dependencies are pinned in `backend/requirements.txt`, so CI, Docker
+and a local install get the same versions.
+
 ## Training data (not in the repo)
 
 The datasets used to train the model (`artifacts/*.csv`, `artifacts/*.npy` —
