@@ -5,8 +5,8 @@
 ```
 cd backend
 pip install -r requirements-dev.txt
-python -m pytest                  # everything (needs Docker; ~2.5 min)
-python -m pytest tests/test_db_constraints.py -k "channel"   # a slice
+python -m pytest --ignore=tests/load          # everything (needs Docker)
+python -m pytest tests/test_db_constraints.py -k "user"     # a slice
 ```
 
 A throwaway `pgvector/pgvector:pg16` container is started for the session and
@@ -17,15 +17,13 @@ so the live database cannot be reached. To use another disposable server instead
 
 | File | Layer | What it proves |
 |---|---|---|
-| `test_db_schema.py` | A | Scripts build the documented schema; re-runnable; migrations 002–006 reach the same schema as a fresh build; archive tables mirror the core tables |
-| `test_db_constraints.py` | B | Bad data is rejected (CHECK, FK, UNIQUE, NOT NULL, vector size); boundaries and defaults; cascades |
+| `test_db_schema.py` | A | Scripts build the documented schema; re-runnable; migrations 003–006 reach the same schema as a fresh build |
+| `test_db_constraints.py` | B | Bad data is rejected (CHECK, FK, UNIQUE, NOT NULL); boundaries and defaults; cascades |
 | `test_api_data.py` | C | The real API routers write the right rows; ownership; error mapping; no orphaned uploads |
 | `test_db_pool.py` | C | The connection pool is safe under concurrent requests |
-| `test_db_views.py` | D | `channel_stats_enriched` KPIs, tiers, `tier_category`, age |
-| `test_data_quality.py` | E | The read-only data-quality checks catch each planted problem |
 | `test_schema_diff.py` | A6 / F | Schema drift is detected; optional live comparison |
 | `test_backup_restore.py` | F | A `pg_dump` restores to an identical database |
-| `test_failover_recovery.py` | G | Database kill/restart/hang, interrupted ETL, quota and model outages, full disk, corrupt rows, restore after total loss (plan: [FAILOVER_RECOVERY_TEST_PLAN.md](FAILOVER_RECOVERY_TEST_PLAN.md); starts its own Postgres container) |
+| `test_failover_recovery.py` | G | Database kill/restart/hang, quota and model outages, full disk, corrupt rows, restore after total loss (plan: [FAILOVER_RECOVERY_TEST_PLAN.md](FAILOVER_RECOVERY_TEST_PLAN.md); starts its own Postgres container) |
 
 Tests marked `xfail(strict=True)` are known defects with the reason attached.
 They flip to a failure when fixed, which is the cue to delete the marker.
@@ -35,24 +33,9 @@ They flip to a failure when fixed, which is the cue to delete the marker.
 Everything below only reads, except the restore drill, which writes to a
 scratch database. `$SUPABASE_DB_URL` is the direct Postgres connection string.
 
-### 1. Data quality (run before every model retrain)
+### 1. Schema drift
 
-```
-cd backend
-python -m tools.data_quality                 # report; exit 1 on integrity errors
-python -m tools.data_quality --strict        # warnings fail too
-python -m tools.data_quality --json > dq.json
-python -m tools.data_quality --stale-days 3 --max-missing-pct 5
-```
-
-Errors (orphans, duplicate snapshots, future timestamps, inconsistent
-predictions, case-variant duplicate emails) should never occur. Warnings
-(decreasing view counts, stale channels, missing metadata) need a look; some are
-legitimate.
-
-### 2. Schema drift
-
-Compares the live `public` schema with a fresh build of `schema/init/01`..`04`:
+Compares the live `public` schema with a fresh build of `schema/init/`:
 
 ```
 cd backend
@@ -63,7 +46,7 @@ A failure lists each missing, unexpected or changed column, index, constraint
 or view. A database that never received migration 003, for example, reports
 `missing constraint: notifications.chk_notifications_type`.
 
-### 3. Access control (Supabase)
+### 2. Access control (Supabase)
 
 ```sql
 -- every table should have RLS enabled
@@ -79,10 +62,10 @@ Any table with `relrowsecurity = false` that `anon` can read is exposed through
 the REST API. `users` (password hashes) must never be. The backend connects as
 the database owner, which bypasses RLS, so enabling it does not affect the
 backend. Migration `004_enable_row_level_security.sql` turns it on for every
-table, and the schema drift check (step 2) now includes each table's RLS
+table, and the schema drift check (step 1) now includes each table's RLS
 setting, so a table losing it is reported.
 
-### 4. Backup and restore drill
+### 3. Backup and restore drill
 
 Do this once per quarter and before any risky migration. Restore into a scratch
 database, never over the live one. A throwaway Docker container works well. Use
@@ -100,12 +83,11 @@ $admin   = "postgresql://postgres:scratch@127.0.0.1:5544/postgres"
 $scratch = "postgresql://postgres:scratch@127.0.0.1:5544/scratch_restore"
 
 # 2. start the scratch server and wait until it accepts TCP connections (it restarts once while initialising)
-docker run -d --name tc-scratch -e POSTGRES_PASSWORD=scratch -p 5544:5432 pgvector/pgvector:pg17
+docker run -d --name tc-scratch -e POSTGRES_PASSWORD=scratch -p 5544:5432 postgres:17
 do { Start-Sleep 2; pg_isready -h 127.0.0.1 -p 5544 -q } until ($LASTEXITCODE -eq 0)
 
-# 3. create the database; the vector extension lives in `public` on Supabase too
+# 3. create the database
 psql $admin -c "CREATE DATABASE scratch_restore"
-psql $scratch -c "CREATE EXTENSION vector"
 
 # 4. back up and restore, noting both durations
 Measure-Command { pg_dump $env:SUPABASE_DB_URL -Fc --no-owner --no-acl --schema=public -f backup.dump }
@@ -118,15 +100,14 @@ The restore prints one harmless error, `schema "public" already exists`
 Compare exact row counts on both sides:
 
 ```powershell
-foreach ($t in 'channel_stats','videos','view_timeseries','video_features','users','predictions','notifications','channel_stats_archive','videos_archive','view_timeseries_archive') {
+foreach ($t in 'users','predictions','notifications','channel_history_cache','channel_history_videos','admins','admin_audit_log') {
   "$t  live=" + (psql $env:SUPABASE_DB_URL -tAc "select count(*) from $t") + "  scratch=" + (psql $scratch -tAc "select count(*) from $t")
 }
 ```
 
-Then run the same two checks against the restored copy (from `backend\`):
+Then run the schema check against the restored copy (from `backend\`):
 
 ```powershell
-python -m tools.data_quality --db-url $scratch
 $env:LIVE_DB_CHECK_URL = $scratch
 python -m pytest tests/test_schema_diff.py -k live -s
 ```
@@ -134,24 +115,27 @@ python -m pytest tests/test_schema_diff.py -k live -s
 Clean up: `docker rm -f tc-scratch`, delete `$HOME\tc-drill`, and remove the
 `SUPABASE_DB_URL` / `LIVE_DB_CHECK_URL` environment variables.
 
-Pass: identical counts, no data-quality errors, `1 passed` from the schema check.
+Pass: identical counts and `1 passed` from the schema check.
 The schema check ignores the harmless rewording Postgres applies to `IN (...)`
 constraints after a restore, but still reports any real change.
 
-### 5. Applying a migration to the live database
+### 4. Applying a migration to the live database
 
-1. Restore the latest backup to a scratch database (step 4).
+1. Restore the latest backup to a scratch database (step 3).
 2. Apply the migration to the scratch copy: `psql "$SCRATCH_URL" -f schema/migrations/00N_....sql`.
 3. Re-run it; it must be a no-op (migrations are written to be idempotent).
-4. Run steps 1 and 2 above against the scratch copy.
+4. Run step 1 above against the scratch copy.
 5. Take a fresh backup of the live database.
 6. Apply to live: `psql "$SUPABASE_DB_URL" -f schema/migrations/00N_....sql`.
-7. Re-run steps 1 and 2 against live.
+7. Re-run step 1 against live.
 
 Migrations that add a constraint (such as 003) fail if existing rows violate
 it; the migration's header has a query to find them first.
 
 ## Run log
+
+Drills before October 2026 ran while the database still held the retired
+data-collection pipeline's tables (dropped by migration 007).
 
 Record each drill so results can be compared over time.
 

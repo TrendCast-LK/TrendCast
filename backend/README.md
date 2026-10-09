@@ -20,7 +20,7 @@ Fill in `.env` with:
 
 | Variable | What it's for |
 | --- | --- |
-| `SUPABASE_DB_URL` | Postgres connection string. Same database the ETL jobs write to. |
+| `SUPABASE_DB_URL` | Postgres connection string for the app database (schema in [schema/](schema/README.md)). |
 | `YOUTUBE_API_KEY` | Used to fetch a user's channel data at signup and on refresh, and to fetch channel history for the forecast baseline (S). |
 | `JWT_SECRET_KEY` | Signs login tokens. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
 
@@ -46,7 +46,7 @@ it's ready.
 
 | File | What it does |
 | --- | --- |
-| `main.py` | App setup, CORS, `/health`, `/channels`, `/videos/{id}/timeseries`, `/forecast` |
+| `main.py` | App setup, CORS, `/health`, `/forecast/health`, `/forecast` |
 | `inference.py` | Loads the CatBoost + HistAttnV2 ensemble from `../ensemble_artifacts/`, encodes the target video once (raw CLIP-512 for HistAttnV2, PCA-32 for CatBoost), blends the two `log(m)` predictions with `ensemble_weight`, and logs per-stage timings (`forecast_timing`). |
 | `histattn.py` | The HistAttnV2 model class (matches `histattn_v2.pt` key for key) and its history-feature builders |
 | `channel_cache.py` | The channel history cache HistAttnV2 reads: background warming at signup / channel refresh, cache-first reads, CatBoost-only fallback on a miss |
@@ -67,14 +67,11 @@ it's ready.
 
 ## Endpoints
 
-**ETL-backed data (no auth):**
+**Service status and direct forecast (no auth):**
 
 | Method & path | What it returns |
 | --- | --- |
 | `GET /health` | DB connectivity check |
-| `GET /channels` | All tracked channels, with computed KPIs |
-| `GET /channels/{channel_id}/videos` | Videos for one channel |
-| `GET /videos/{video_id}/timeseries` | Raw view/like/comment history for one video |
 | `GET /forecast/health` | Whether the ML models finished loading |
 | `POST /forecast` | Run a forecast for a title + thumbnail URL + upload time; returns a point estimate and an uncertainty range (low/high) |
 
@@ -104,7 +101,7 @@ it's ready.
 | `GET /admin/cache` | Channel history cache entries plus user-linked channels with none: fresh / stale / never warmed, errors, 7-day hit rate |
 | `POST /admin/cache/{channel_id}/warm`, `POST /admin/cache/warm-stale`, `DELETE /admin/cache/{channel_id}` | Re-warm one channel or up to 25 stale ones (503 until the model loads); purge an entry |
 
-Create the first admin after applying migration 006: `python -m tools.create_admin --email you@example.com --name "Your Name"`.
+Create the first admin once the schema is applied: `python -m tools.create_admin --email you@example.com --name "Your Name"`.
 
 ## Test it's working
 
@@ -113,8 +110,16 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/forecast/health
 ```
 
-There's no automated test suite for the backend yet — testing today means
-running it and hitting endpoints by hand (or through the frontend).
+The automated tests need Docker (they start a throwaway Postgres container):
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest --ignore=tests/load
+```
+
+What each test file covers, and how to check the live database, is in
+[tests/DB_TESTING.md](tests/DB_TESTING.md). The load-test kit is in
+[tests/load/](tests/load/README.md).
 
 ## Forecast accuracy
 
@@ -122,15 +127,16 @@ running it and hitting endpoints by hand (or through the frontend).
 export scripts' reference cases through the serving code: CatBoost matches
 `reference_predictions.json` to 1e-6, HistAttnV2 matches
 `histattn_reference_predictions.json` to 1e-4, and the blend matches the
-reference ensemble values. It needs the training corpus in `../artifacts/`.
+reference ensemble values. The replay cases need the training corpus (not in
+the repo) in `../artifacts/` and skip without it.
 The response includes a `range_7d` with low/high bounds (computed from
 `residual_std` in `config.json`) for uncertainty visualization.
 
 ## Known gaps
 
-- **Confidence is a heuristic, not a model output.** `predictions.py` sets it
-  to a fixed 0.85 or 0.55 depending on whether a real channel was matched
-  — the models don't produce a calibrated uncertainty estimate.
+- **Confidence is a heuristic, not a model output.** `predictions.py` derives
+  it from the width of the uncertainty band relative to the point estimate;
+  the models don't produce a calibrated uncertainty estimate.
 - **Admin dashboard has no model/inference page yet** (latency, error rate, artifact reload). The admin login throttle and the 30s admin-row cache are in-process (per worker).
 - **YouTube API quota.** Fetching channel history on each forecast costs quota.
   The service caches per channel for 6 hours to mitigate this.

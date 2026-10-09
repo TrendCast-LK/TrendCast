@@ -1,8 +1,7 @@
 # Load testing
 
 Implements section 3.1.5 (Load Testing) of the test plan for the TrendCast **backend API and its
-database**. The ETL pipeline is out of scope: the pipeline tables that `/channels` and `/videos` read
-are seeded with static rows, and the ETL is never run.
+database**.
 
 **Tool: [Locust](https://locust.io).** Scenarios are plain Python next to the backend's own tests, it
 has a live web UI and CSV/HTML output, and there is no user cap (LoadRunner's free edition stops at
@@ -13,8 +12,7 @@ kit is Locust-only.
 
 | Journey (Locust user) | Share | Endpoints |
 |---|---:|---|
-| `BrowseUser` | 60 | `/dashboard/summary`, `/trends/summary`, `/notifications`, `/predictions`, `/predictions/{id}`, `/channel/me`, `/auth/me` |
-| `DataUser` | 25 | `/channels` (unpaginated, largest payload), `/channels/{id}/videos`, `/videos/{id}/timeseries`, `/health`, `/forecast/health` |
+| `BrowseUser` | 60 | `/dashboard/summary`, `/trends/summary`, `/notifications`, `/predictions`, `/predictions/{id}`, `/channel/me`, `/auth/me`, `/health`, `/forecast/health` |
 | `PredictUser` | 10 | `POST /predictions` (model run and drafts), `DELETE /predictions/{id}`, `POST /forecast` |
 | `AccountUser` | 5 | `POST /auth/signup`, `PATCH /auth/me`, `/auth/change-password`, `/channel/refresh`, login |
 | `AuthStormUser` | (auth scenario only) | back-to-back `POST /auth/login` |
@@ -24,13 +22,12 @@ Things the tests are designed to expose:
 - **DB pool is 10 connections** (`db.py` `MAX_CONNECTIONS`). Beyond that, requests queue on a semaphore for up to 30 s: expect latency to climb before any errors. `db_active` pinned at ~10 in the report is the sign.
 - **bcrypt** (`security.py`) is CPU-heavy: login and signup storms can starve every other request in the process. The `auth` scenario isolates this.
 - **`POST /predictions`** is the expensive operation (image + text embedding and the model).
-- **`GET /channels`** returns every channel in one response.
 
 ## Safety: nothing here can touch your real data
 
 - The database comes only from **`LOAD_TEST_DB_URL`**. `SUPABASE_DB_URL` and `backend/.env` are never read, and every tool refuses if `LOAD_TEST_DB_URL` points at the same database as either. Non-local hosts need `--allow-remote` (or `LOAD_ALLOW_REMOTE=1` for the app).
 - Load is only sent to the **stubbed app** (`stubbed_app.py`), which serves a `/__loadtest__` marker. `smoke_check.py`, Locust and the runner all refuse to start against anything else, for example your normal `uvicorn main:app` dev server.
-- Every seeded row is marked (`loadtest_*@example.com`, channels `UCLOAD*`, sign-ups `loadsignup_*@example.com`), and `cleanup` deletes only those.
+- Every seeded row is marked (`loadtest_*@example.com`, sign-ups `loadsignup_*@example.com`), and `cleanup` deletes only those.
 - The YouTube API is faked in-process (no quota, no network). Uploads go to a temp directory, not `backend/uploads`.
 
 ## Setup (once)
@@ -38,7 +35,7 @@ Things the tests are designed to expose:
 ```powershell
 pip install -r backend/requirements.txt -r backend/tests/load/requirements-load.txt
 
-# a disposable Postgres (pgvector, pg_stat_statements on, data in RAM):
+# a disposable Postgres (pg_stat_statements on, data in RAM):
 docker compose -f backend/tests/load/docker-compose.load.yml up -d
 $env:LOAD_TEST_DB_URL = "postgresql://postgres:loadtest@127.0.0.1:55432/postgres"
 ```
@@ -52,13 +49,13 @@ starting the app). Never a database with real user data.
 ```powershell
 cd backend/tests/load
 
-# 1. schema (if empty) + data. Scales: small | medium (default) | large, or set --users/--channels/...
+# 1. schema (if empty) + data. Scales: small | medium (default) | large, or set --users/--predictions-per-user/...
 python seed_load_data.py seed --scale medium --apply-schema
 
 # 2. the backend, in a second terminal (same LOAD_TEST_DB_URL). Port 8100 so it never clashes with the dev server.
 uvicorn stubbed_app:app --app-dir . --port 8100
 
-# 3. check the setup: one request to every endpoint (expect 17/17)
+# 3. check the setup: one request to every endpoint (expect 14/14)
 python smoke_check.py
 
 # 4a. the whole suite, with reports (about 45 min; add soak for another 30)
@@ -90,7 +87,7 @@ Afterwards: `python seed_load_data.py cleanup`, then `docker compose -f docker-c
 
 Every knob is an environment variable (`shapes.py`, `locustfile.py`): `LOAD_NORMAL_USERS`,
 `LOAD_RAMP_MAX`, `LOAD_SPIKE_HIGH`, `LOAD_THINK_MIN/MAX`, `LOAD_AUTH=login` (each user logs in first instead of
-using a pre-signed token), `LOAD_PROFILE=read|browse|data|predict|account|auth|mixed`, and so on.
+using a pre-signed token), `LOAD_PROFILE=browse|predict|account|auth|mixed`, and so on.
 
 ## Pass/fail criteria
 
@@ -123,7 +120,7 @@ that does not have the expected shape.
 - **Run the load generator on a different machine from the backend and database.** On one laptop they
   compete for CPU (the dry run showed 100 % system CPU), which measures the laptop, not the API.
 - The plan asks for a dedicated machine or time slot and a database of realistic size: use `--scale large` and `docker-compose.load.yml` (or a dedicated Supabase project on the plan you deploy on).
-- The model is **stubbed by default** (`LOAD_MODEL=stub`, 800 ms of CPU per forecast, `LOAD_STUB_MODEL_MS` to change it) so the API and database can be measured without torch. To load-test real inference, start the app with `$env:LOAD_MODEL="real"`: it needs `artifacts/` and ~25 s to start; only the YouTube calls stay faked.
+- The model is **stubbed by default** (`LOAD_MODEL=stub`, 800 ms of CPU per forecast, `LOAD_STUB_MODEL_MS` to change it) so the API and database can be measured without torch. To load-test real inference, start the app with `$env:LOAD_MODEL="real"`: it needs `ensemble_artifacts/` and ~25 s to start; only the YouTube calls stay faked.
 - Compare like with like: repeat a scenario after each change (pool size, workers, indexes) and keep the `results/` folders.
 
 ## Files

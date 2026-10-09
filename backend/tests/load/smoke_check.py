@@ -32,7 +32,6 @@ def main() -> None:
         sys.exit(f"{lc.MANIFEST_PATH} not found. Run `python seed_load_data.py seed` first.")
     manifest = json.loads(lc.MANIFEST_PATH.read_text(encoding="utf-8"))
     user = manifest["users"][0]
-    channel = manifest["channels"][0]
     token = jwt.encode(
         {"sub": str(user["id"]), "exp": datetime.now(timezone.utc) + timedelta(hours=1)}, lc.JWT_SECRET, algorithm="HS256"
     )
@@ -44,9 +43,6 @@ def main() -> None:
     checks = [
         ("GET /health", "GET", "/health", {}, 200),
         ("GET /forecast/health", "GET", "/forecast/health", {}, 200),
-        ("GET /channels", "GET", "/channels", {}, 200),
-        ("GET /channels/[id]/videos", "GET", f"/channels/{channel['channel_id']}/videos", {}, 200),
-        ("GET /videos/[id]/timeseries", "GET", f"/videos/{channel['series_videos'][0]}/timeseries", {}, 200),
         ("POST /auth/login", "POST", "/auth/login", {"data": {"username": user["email"], "password": manifest["password"]}}, 200),
         ("GET /auth/me", "GET", "/auth/me", {"headers": auth}, 200),
         ("GET /dashboard/summary", "GET", "/dashboard/summary", {"headers": auth}, 200),

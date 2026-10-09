@@ -18,8 +18,9 @@ services:
       # between the two ways of running the app and survive rebuilds.
       - ./backend/uploads:/app/backend/uploads
     ports:
-      # Only for API docs / debugging (http://localhost:8000/docs); the app goes through the frontend.
-      - "127.0.0.1:8000:8000"
+      # Only for API docs / debugging (http://localhost:8001/docs); the app goes through the frontend.
+      # 8001, not 8000, so it can run while a local `uvicorn` holds 8000.
+      - "127.0.0.1:8001:8000"
     restart: unless-stopped
 
   frontend:

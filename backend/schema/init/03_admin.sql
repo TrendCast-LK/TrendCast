@@ -1,9 +1,9 @@
 -- =============================================================================
 -- Admin Dashboard
--- File: backend/schema/init/06_admin.sql
+-- File: backend/schema/init/03_admin.sql
 -- Purpose: Accounts for the admin dashboard (separate from app users, with
 --          their own login) and an audit log of every admin action.
---          users.is_active, which admins toggle, lives in 03_app_backend.sql.
+--          users.is_active, which admins toggle, lives in 01_app_backend.sql.
 -- =============================================================================
 
 -- =============================================================================
@@ -57,6 +57,6 @@ CREATE INDEX IF NOT EXISTS idx_admin_audit_log_target
 COMMENT ON TABLE admin_audit_log IS
     'Audit trail of admin dashboard actions (login, disable/enable/delete user, channel refresh, ...).';
 
--- Row-level security, as for every other table (see 03_app_backend.sql).
+-- Row-level security, as for every other table (see 01_app_backend.sql).
 ALTER TABLE admins          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_audit_log ENABLE ROW LEVEL SECURITY;

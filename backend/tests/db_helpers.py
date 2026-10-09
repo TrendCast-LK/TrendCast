@@ -20,30 +20,6 @@ def insert(cur, table: str, ignore_conflict: bool = False, **values) -> None:
     cur.execute(stmt, values)
 
 
-def channel(cur, channel_id="UC001", **over):
-    values = {"channel_id": channel_id, "channel_title": "Test Channel", **over}
-    insert(cur, "channel_stats", **values)
-    return values["channel_id"]
-
-
-def video(cur, video_id="vid001", channel_id="UC001", parent=True, **over):
-    """Insert a video. parent=False skips creating the channel (for FK tests)."""
-    if parent:
-        insert(cur, "channel_stats", ignore_conflict=True,
-               channel_id=channel_id, channel_title="Test Channel")
-    values = {"video_id": video_id, "channel_id": channel_id, "published_at": NOW, **over}
-    insert(cur, "videos", **values)
-    return values["video_id"]
-
-
-def timeseries(cur, video_id="vid001", parent=True, **over):
-    if parent:
-        cur.execute("SELECT 1 FROM videos WHERE video_id = %s", (video_id,))
-        if cur.fetchone() is None:
-            video(cur, video_id=video_id)
-    insert(cur, "view_timeseries", video_id=video_id, **over)
-
-
 def user(cur, email="user@example.com", **over):
     values = {"full_name": "Test User", "email": email, "password_hash": "x", **over}
     insert(cur, "users", **values)
@@ -62,10 +38,6 @@ def notification(cur, user_id=None, **over):
         user_id = user(cur)
     values = {"type": "welcome", "title": "Hi", "message": "Welcome", **over}
     insert(cur, "notifications", user_id=user_id, **values)
-
-
-def vector(dim: int, fill: float = 0.1) -> str:
-    return "[" + ",".join([str(fill)] * dim) + "]"
 
 
 def count(cur, table: str, where: str = "TRUE", params=()) -> int:

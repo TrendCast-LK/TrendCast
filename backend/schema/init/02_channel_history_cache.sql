@@ -1,16 +1,12 @@
 -- =============================================================================
 -- Channel History Cache
--- File: backend/schema/init/05_channel_history_cache.sql
+-- File: backend/schema/init/02_channel_history_cache.sql
 -- Purpose: Pre-encoded channel history for the HistAttnV2 half of the forecast
 --          ensemble (backend/channel_cache.py). Warmed in the background at
 --          signup / channel refresh so a prediction reads embeddings instead
 --          of downloading and encoding up to 20 thumbnails per request.
 --          Owned by the FastAPI backend, keyed on the YouTube channel id (one
 --          entry is shared by every user linked to that channel).
---
--- Not the ETL's video_features table: that one holds LaBSE-768 title vectors
--- for tracked `videos` rows only, while this model needs the multilingual
--- CLIP-512 text vectors of any user's channel.
 -- =============================================================================
 
 -- =============================================================================

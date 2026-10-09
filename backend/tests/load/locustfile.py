@@ -1,4 +1,4 @@
-"""Locust scenarios for the TrendCast API (the ETL is out of scope).
+"""Locust scenarios for the TrendCast API.
 
 Run (web UI at http://localhost:8089):
     locust -f backend/tests/load/locustfile.py --host http://127.0.0.1:8100
@@ -8,13 +8,12 @@ Headless with one of the timed shapes (see shapes.py):
         --csv results/spike --html results/spike.html
 
 Virtual-user types and their share of the traffic:
-    BrowseUser   60  dashboard, trends, notifications, own predictions, own channel
-    DataUser     25  /channels, /channels/{id}/videos, /videos/{id}/timeseries, health
+    BrowseUser   60  dashboard, trends, notifications, own predictions, own channel, health
     PredictUser  10  POST /predictions (model run + drafts), delete, /forecast
     AccountUser   5  signup, profile update, password change, channel refresh
     AuthStormUser 0  repeated logins (bcrypt-bound); only in LOAD_PROFILE=auth
 
-LOAD_PROFILE picks which types run: mixed (default) | read | browse | data | predict | account | auth.
+LOAD_PROFILE picks which types run: mixed (default) | browse | predict | account | auth.
 LOAD_AUTH=token (default) signs a JWT per virtual user; LOAD_AUTH=login makes each user log in first.
 
 Requires the seed data from seed_load_data.py (seed_manifest.json).
@@ -44,10 +43,8 @@ THINK = (float(os.environ.get("LOAD_THINK_MIN", 1)), float(os.environ.get("LOAD_
 INCLUDE_FORECAST = os.environ.get("LOAD_INCLUDE_FORECAST", "1") == "1"
 
 PROFILES = {
-    "mixed": {"BrowseUser", "DataUser", "PredictUser", "AccountUser"},
-    "read": {"BrowseUser", "DataUser"},
+    "mixed": {"BrowseUser", "PredictUser", "AccountUser"},
     "browse": {"BrowseUser"},
-    "data": {"DataUser"},
     "predict": {"PredictUser"},
     "account": {"AccountUser"},
     "auth": {"AuthStormUser"},
@@ -66,7 +63,6 @@ if not lc.MANIFEST_PATH.exists():
     raise SystemExit(f"{lc.MANIFEST_PATH} not found. Run `python seed_load_data.py seed` first.")
 MANIFEST = json.loads(lc.MANIFEST_PATH.read_text(encoding="utf-8"))
 ACCOUNTS = MANIFEST["users"]
-CHANNELS = MANIFEST["channels"]
 _account_cycle = itertools.cycle(random.sample(ACCOUNTS, len(ACCOUNTS)))
 
 CATEGORIES = ["Gaming", "Music", "Education", "Vlog", "Tech"]
@@ -185,31 +181,6 @@ class BrowseUser(TrendCastUser):
     @task(1)
     def mark_all_read(self):
         self.call("POST", "/notifications/read-all", "POST /notifications/read-all")
-
-
-class DataUser(TrendCastUser):
-    """Reads the pipeline data. Public endpoints in the API, so no token is needed (it is sent anyway)."""
-
-    weight = 25
-
-    @task(2)
-    def channels(self):
-        # returns every channel in one response, so this is the largest payload in the mix
-        self.call("GET", "/channels", "GET /channels", expect=lambda b: isinstance(b, list))
-
-    @task(4)
-    def channel_videos(self):
-        channel = random.choice(CHANNELS)
-        self.call("GET", f"/channels/{channel['channel_id']}/videos", "GET /channels/[id]/videos",
-                  expect=lambda b: isinstance(b, list))
-
-    @task(4)
-    def timeseries(self):
-        channel = random.choice(CHANNELS)
-        if channel["series_videos"]:
-            video_id = random.choice(channel["series_videos"])
-            self.call("GET", f"/videos/{video_id}/timeseries", "GET /videos/[id]/timeseries",
-                      expect=lambda b: isinstance(b, list) and len(b) > 0)
 
     @task(1)
     def health(self):
@@ -351,7 +322,7 @@ class AuthStormUser(TrendCastUser):
             self.call("GET", "/dashboard/summary", "GET /dashboard/summary")
 
 
-for _cls in (BrowseUser, DataUser, PredictUser, AccountUser, AuthStormUser):
+for _cls in (BrowseUser, PredictUser, AccountUser, AuthStormUser):
     _cls.abstract = _cls.__name__ not in PROFILES[PROFILE]
 del _cls  # a leftover module-level alias would make Locust see the last class twice
 

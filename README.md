@@ -1,134 +1,87 @@
 # TrendCast
 
-TrendCast helps Sri Lankan YouTube creators guess how a video will
-perform **before they upload it**.
+TrendCast forecasts the first seven days of views for a YouTube video
+**before it is published**, built for Sri Lankan creators.
 
-You give it a title, a thumbnail, and a planned upload time. It gives
-you back a 7-day view forecast, based on a model trained on real view
-histories from tracked channels.
+A creator signs up with their channel URL, enters a planned video's title,
+tags, duration, publish time and thumbnail, and gets back a 7-day view
+forecast: a daily accumulation curve, a total, and an uncertainty range.
 
-## How it works, in short
+## How the forecast works
 
-1. A pipeline pulls channel and video stats from YouTube into a database.
-2. That data trains a model offline (title + thumbnail + channel stats →
-   predicted view growth).
-3. A backend loads the trained model and serves forecasts.
-4. A web dashboard lets creators sign up, connect their channel, and run
-   predictions.
+The forecast is decomposed as **N(t) = S × m × F(t)**:
+
+- **S, the channel anchor:** the median 7-day-equivalent views of the
+  channel's recent uploads, fetched live from the YouTube Data API.
+- **m, the multiplier:** how far this video is expected to beat or miss the
+  channel's norm. It is a blend of two models in log space:
+  - a CatBoost model over pre-publish features (video metadata,
+    multilingual CLIP title and thumbnail embeddings, channel statistics);
+  - HistAttnV2, an attention network that compares the new video with the
+    channel's last 20 uploads.
+
+  If the channel's history isn't cached yet, the forecast uses CatBoost alone.
+- **F(t), the curve shape:** a logistic or power-law accumulation curve whose
+  family and parameters are predicted by CatBoost models.
+
+The trained models are in [ensemble_artifacts/](ensemble_artifacts/), along
+with the scripts that exported them.
 
 ## Architecture
 
 ```
-YouTube Data API v3
-        │
-        ▼
-GitHub Actions (scheduled jobs, plain Python + Postgres — no Kafka/Spark)
-  • Job 1: channel + new-video ingestion, every 12h
-  • Job 2: view-count polling, every 5 min (faster for brand-new videos)
-  • Job 3: caches title/thumbnail embeddings, every 12h
-        │
-        ▼
-Supabase / PostgreSQL
-  channel_stats · videos · view_timeseries · video_features
-  users · predictions · notifications
-        │
-        ├──────────────► ml/  (offline, run by hand)
-        │                 extract → fit curves → build features
-        │                 → train XGBoost models
-        │                         │
-        │                         ▼ (model files, copied by hand)
-        ▼
-backend/ (FastAPI)  ──serves──►  frontend/ (React, "TrendCast")
-  loads the trained model,           sign up, connect a channel,
-  serves /forecast + full            run predictions, see trends
-  app API (auth, predictions,
-  notifications)
+ React frontend ──/api──► FastAPI backend ──────► Supabase / PostgreSQL
+ (creator pages +         auth, predictions,      users · predictions · notifications
+  /admin dashboard)       admin, forecast engine   channel history cache · admins
+                                │
+                                ├──► YouTube Data API v3 (channel data, recent uploads)
+                                └──► ensemble_artifacts/ (CatBoost + HistAttnV2, loaded at start-up)
 ```
-
-All parts share one database, via the `SUPABASE_DB_URL` connection string.
-
-## Tech stack
-
-| Layer | Tech |
-| --- | --- |
-| Data collection | GitHub Actions (cron) + Python, YouTube Data API v3 |
-| Database | Supabase (PostgreSQL) |
-| Model training | Python, CatBoost, sentence-transformers (CLIP + multilingual CLIP for embeddings), scikit-learn PCA |
-| Model serving | FastAPI, CatBoost, CLIP embeddings, cached PCA transforms, 6h channel history cache |
-| Frontend | React 19 + Vite, Tailwind CSS, Chart.js |
 
 ## Repo layout
 
 | Folder | What it is |
 | --- | --- |
-| [youtube-etl-pipeline/](youtube-etl-pipeline/README.md) | Data collection jobs (GitHub Actions), database schema |
-| [backend/](backend/README.md) | FastAPI service — serves forecasts, auth, predictions, notifications |
-| [ml/](ml/README.md) | Offline pipeline that trains the forecast model |
-| [frontend/](frontend/README.md) | React dashboard ("TrendCast") |
-| [CLAUDE.md](CLAUDE.md) | Full database table reference |
+| [backend/](backend/README.md) | FastAPI service: the forecast engine, auth, predictions, notifications, admin API, database schema and tests |
+| [frontend/](frontend/README.md) | React app: creator pages and the admin dashboard |
+| [ensemble_artifacts/](ensemble_artifacts/) | Trained models, PCA transforms, configuration and the export scripts that produced them |
 
-## Quickstart (run it yourself)
+## Tech stack
 
-Everything needed to *run* the app is in this repo — the trained forecast
-models (`artifacts/*.cbm`, `*.pkl`, `*.json`, ~2 MB) are committed. Only the
-large *training* data is left out (see [Training data](#training-data-not-in-the-repo)).
+| Layer | Tech |
+| --- | --- |
+| Frontend | React 19, Vite, Tailwind CSS, Chart.js, React Router |
+| Backend | FastAPI, psycopg2, bcrypt, PyJWT |
+| Model serving | CatBoost, PyTorch (HistAttnV2), sentence-transformers (CLIP and multilingual CLIP), scikit-learn PCA |
+| Database | PostgreSQL (Supabase) |
+| Deployment | Docker Compose (nginx frontend + backend) |
+
+## Running it
 
 ### Prerequisites
 
-- Python 3.10+ and Node.js 18+
-- A PostgreSQL database (a free [Supabase](https://supabase.com) project, or local Postgres)
+- A PostgreSQL database: a free [Supabase](https://supabase.com) project, or local Postgres
 - A [YouTube Data API v3 key](https://console.cloud.google.com/apis/library/youtube.googleapis.com)
-- ~3 GB free disk and internet on first run (installs PyTorch and downloads the
-  CLIP models from Hugging Face, cached afterwards)
+- Either Docker Desktop (option A), or Python 3.12 and Node.js 22 (option B)
+- ~3 GB free disk and internet on first run (PyTorch, and the CLIP models
+  downloaded from Hugging Face, cached afterwards)
 
 ### 1. Set up the database
 
-Apply the SQL files in [backend/schema/init/](backend/schema/init/)
-in order (`01` → `06`). `03_app_backend.sql` creates the `users`, `predictions`
-and `notifications` tables the app needs; `06_admin.sql` adds the admin
-dashboard's accounts and audit log.
+Apply the SQL files in [backend/schema/init/](backend/schema/init/) in order:
 
 ```bash
 for f in backend/schema/init/0*.sql; do psql "$SUPABASE_DB_URL" -f "$f"; done
 ```
 
-(Without `psql`, paste each file into the Supabase SQL editor.)
+(Without `psql`, paste each file into the Supabase SQL editor.) The tables
+are described in [backend/schema/README.md](backend/schema/README.md).
 
-To use the admin dashboard (`/admin/login`), create an admin account from
-`backend/` once the backend's dependencies are installed (step 2):
-`python -m tools.create_admin --email you@example.com --name "Your Name"`.
-
-### Option A: run everything with Docker
-
-With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running
-and `backend/.env` filled in (see the table in step 2), from the repo root:
+### 2. Configure the backend
 
 ```bash
-docker compose up --build       # first build ~10-20 min (PyTorch + CLIP models); later builds reuse layers
+cp backend/.env.example backend/.env      # Windows: copy backend\.env.example backend\.env
 ```
-
-Open `http://localhost:8080`. The backend needs ~30s after start to load the
-models. `docker compose down` stops it; after changing code, run
-`docker compose up --build` again. nginx in the frontend container forwards
-`/api/*` to the backend, so no `frontend/.env` or CORS setup is needed, and
-uploads are kept in `backend/uploads/` (shared with a local run).
-
-For day-to-day coding the two-terminal setup below (steps 2 and 3) is
-quicker, since it reloads on every save.
-
-### Option B: run the backend and frontend directly
-
-### 2. Backend
-
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate          # Mac/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env            # Windows: copy .env.example .env
-```
-
-Edit `backend/.env`:
 
 | Variable | Value |
 | --- | --- |
@@ -136,84 +89,84 @@ Edit `backend/.env`:
 | `YOUTUBE_API_KEY` | your YouTube Data API key |
 | `JWT_SECRET_KEY` | run `python -c "import secrets; print(secrets.token_hex(32))"` |
 
+### Option A: Docker
+
+With Docker Desktop running, from the repo root:
+
 ```bash
-uvicorn main:app --reload       # http://127.0.0.1:8000 — ~25s to load models on start
+docker compose up --build       # first build ~10-20 min (PyTorch + CLIP models)
 ```
 
-Check it: `http://127.0.0.1:8000/docs` should load.
+Open `http://localhost:8080`. The backend needs ~30 s after starting to load
+the models. `docker compose down` stops it.
 
-### 3. Frontend (second terminal)
+### Option B: run the backend and frontend directly
+
+Backend (first terminal):
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Mac/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload       # http://127.0.0.1:8000, ~30 s to load the models
+```
+
+Frontend (second terminal):
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env            # points at http://localhost:8000 by default
+cp .env.example .env            # points at http://localhost:8000
 npm run dev                     # http://localhost:5173
 ```
 
-Open `http://localhost:5173`, sign up with a YouTube channel URL, and run a prediction.
+### 3. Use it
+
+Open the app, sign up with a YouTube channel URL, and run a prediction. The
+channel needs at least five public uploads for a forecast.
+
+To use the admin dashboard (`/admin/login`), create an admin account from
+`backend/` (with its dependencies installed):
+
+```bash
+python -m tools.create_admin --email you@example.com --name "Your Name"
+```
 
 ### Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | `... environment variable is not set` on backend start | Fill in all three values in `backend/.env` |
-| `missing artifact: .../artifacts/...` | Make sure you cloned the full repo; `artifacts/` must contain the `.cbm`/`.pkl`/`.json` files |
+| `/forecast/health` reports a missing artifact | `ensemble_artifacts/` must contain the `.cbm`, `.pkl`, `.pt` and `.json` files from the repo |
 | First start is very slow | It's downloading the CLIP models; later starts use the cache |
 | Frontend can't reach the API | Check `VITE_API_URL` in `frontend/.env` and that the backend is running |
+| Prediction fails with "YouTube API limit reached" | The API key's daily quota is used up; try again the next day or use another key |
 
-Each part's README has the full details — env vars, endpoints, key files,
-known gaps.
+## Tests
 
-## CI
+The backend tests need Docker (they start a throwaway Postgres container):
 
-GitHub Actions runs on every pull request and every push to `main`:
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest --ignore=tests/load
+```
 
-- [ci.yml](.github/workflows/ci.yml): backend tests (a throwaway Postgres in
-  Docker, the model stubbed) and the frontend lint and build.
-- [model.yml](.github/workflows/model.yml): loads the real ensemble from
-  `ensemble_artifacts/` and checks it; runs only when the model files or the
-  inference code change.
+See [backend/tests/DB_TESTING.md](backend/tests/DB_TESTING.md) for what each
+test file covers, and the test reports in [backend/tests/](backend/tests/).
 
-Backend dependencies are pinned in `backend/requirements.txt`, so CI, Docker
-and a local install get the same versions.
+GitHub Actions runs the backend tests and the frontend lint and build on
+every pull request and push to `main` ([ci.yml](.github/workflows/ci.yml)),
+and checks the model artifacts when they change ([model.yml](.github/workflows/model.yml)).
 
-## Training data (not in the repo)
+## Known limitations
 
-The datasets used to train the model (`artifacts/*.csv`, `artifacts/*.npy` —
-~350 MB) are excluded from git via `.gitignore`. You **don't need them to run
-the app**. To retrain, regenerate them with the pipeline in
-[ml/](ml/README.md) (extract from the database → build features → train →
-`artifacts/export_artifacts.py`), or ask the maintainers for the data bundle.
-
-## Status
-
-**Working today:**
-
-- All three data-collection jobs run live on GitHub Actions.
-- The forecast model is trained offline with CatBoost (`artifacts/export_artifacts.py`):
-  - Six models: magnitude (V_inf multiplier), shape family (logistic vs power), and four shape parameters (k, t0, c, theta).
-  - Reference validation: **0.24% mean relative error** on 20 held-out rows.
-- `/forecast` and `/predictions` call the real trained models (not a stub) — see `backend/inference.py`.
-  - Loads artifacts once at startup (~25s).
-  - Returns point estimate + uncertainty range (low/high bounds).
-  - Fetches channel history from YouTube API to compute the baseline (S), cached 6h per channel.
-- Full account system: signup/login, per-user channel binding, saved predictions, notifications.
-- Feature-computation logic (embeddings, PCA, feature assembly) is shared between training (`ml/`) and serving (`backend/`) through `ml/services/` — prevents feature drift.
-
-**Manual / not automated:**
-
-- Retraining the model (the full ML pipeline up to `export_artifacts.py`) is run by hand locally. Nothing schedules it.
-- The `artifacts/` folder contains the trained CatBoost models and PCA transforms (committed, small); they're loaded directly by the backend at startup. Large training CSV/NPY files are git-ignored.
-- The `ml/` training scripts don't yet read from the new `video_features` embedding cache — they still compute embeddings from scratch each time. Wiring that up is planned but not done.
-
-**Not built:**
-
-- No admin or monitoring dashboard. The frontend only has creator-facing pages.
-- No automated test suite for the backend or frontend. The ETL pipeline has one small test file (`youtube-etl-pipeline/tests/test_key_pool.py`).
-
-**Notes:**
-
-- A prediction's `confidence` number is a heuristic (fixed at 0.85 or 0.55 depending on whether a real channel match was found), not a model uncertainty estimate. See `backend/routers/predictions.py`.
-- The uncertainty range in the forecast response is a fixed-width approximation based on residual_std from training, not a calibrated prediction interval.
-- ETL folder note: `youtube-etl-pipeline/` also contains an older Kafka + Spark + Airflow setup (via `docker-compose.yml`). That is **not** what runs in production — see that folder's README for details.
+- A prediction's `confidence` is a heuristic derived from the width of the
+  uncertainty range, not a calibrated model output.
+- The uncertainty range uses CatBoost's held-out residual spread and covers
+  the 7-day total only.
+- The first forecast after sign-up may be CatBoost-only while the channel
+  history cache warms in the background.
+- The training data (~1 GB) is not in the repo; the export scripts in
+  `ensemble_artifacts/` need it to retrain.

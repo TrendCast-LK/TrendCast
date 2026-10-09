@@ -1,5 +1,14 @@
 ### 3.1.7 Failover and Recovery Testing
 
+> **Note:** this report records the test run on 20 September 2026. At that time the
+> database also held the YouTube data-collection pipeline's tables (`channel_stats`,
+> `videos`, `view_timeseries`, `video_features`, the archive tables and the
+> `channel_stats_enriched` view) and their endpoints. The pipeline has since been
+> retired, and those tables, endpoints and their tests were removed
+> (migration `007_drop_pipeline_tables.sql`).
+
+> **Note (2026-10-07):** the ETL pipeline was removed from the repo, and with it the F-06, F-07 and F-08 tests. The ETL rows below record the run they came from.
+
 Failover and recovery testing ensures that TrendCast can fail over and recover from a variety of hardware, software and network malfunctions without undue loss of data or data integrity.
 
 Recovery testing is an antagonistic test process in which the application or system is exposed to extreme conditions, or simulated conditions, to cause a failure, such as a killed process, a lost database connection or a full disk. Recovery processes are then invoked, and the system is monitored and inspected to verify that proper application and data recovery has been achieved.

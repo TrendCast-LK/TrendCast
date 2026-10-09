@@ -1,9 +1,8 @@
 """Resolves a pasted YouTube channel URL to a channel snapshot via the YouTube
 Data API v3, using the single YOUTUBE_API_KEY already set in backend/.env.
 
-This is intentionally lighter than youtube-etl-pipeline/youtube_extractor's
-APIKeyPool (multi-key rotation for bulk polling) - per-user signup/refresh
-lookups here are low-volume enough that one key is fine.
+Per-user signup/refresh lookups are low-volume enough that one key is fine;
+there is no multi-key rotation.
 """
 
 from __future__ import annotations

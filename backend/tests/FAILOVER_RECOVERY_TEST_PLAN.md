@@ -1,5 +1,14 @@
 # TrendCast – Failover and Recovery Test Plan
 
+> **Note:** this report was written in September 2026. At that time the
+> database also held the YouTube data-collection pipeline's tables (`channel_stats`,
+> `videos`, `view_timeseries`, `video_features`, the archive tables and the
+> `channel_stats_enriched` view) and their endpoints. The pipeline has since been
+> retired, and those tables, endpoints and their tests were removed
+> (migration `007_drop_pipeline_tables.sql`).
+
+> **Note (2026-10-07):** the ETL pipeline was removed from the repo, and with it the F-06, F-07 and F-08 tests. Section B and the other ETL rows below are retired.
+
 | | |
 |---|---|
 | **System** | TrendCast – YouTube view forecasting web application (FastAPI backend, PostgreSQL on Supabase, React frontend, GitHub Actions ETL) |

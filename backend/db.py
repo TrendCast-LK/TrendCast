@@ -1,9 +1,7 @@
 """psycopg2 connection pool for the Supabase/Postgres database.
 
-Same connection target (SUPABASE_DB_URL) and driver as the ETL jobs in
-youtube-etl-pipeline/youtube_extractor/job2_timeseries_collector.py, wrapped
-in a pool since the API serves concurrent requests instead of a single
-one-shot run.
+Connects to SUPABASE_DB_URL, through a pool since the API serves concurrent
+requests.
 
 FastAPI runs sync endpoints on a thread pool, so the pool must be thread-safe
 (ThreadedConnectionPool). It raises immediately when all connections are in

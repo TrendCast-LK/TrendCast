@@ -13,7 +13,6 @@ Tests marked xfail(strict=True) are defects found by this suite, with the reason
 """
 
 import errno
-import importlib.util
 import json
 import pathlib
 import shutil
@@ -27,7 +26,6 @@ from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 
-import httplib2
 import psycopg2
 import pytest
 import requests
@@ -40,9 +38,6 @@ from conftest import BACKEND_DIR, CONTAINER, INIT_SCRIPTS, MIGRATION_003, PG_IMA
 from test_api_data import CHANNEL, FORECAST, PASSWORD, fake_forecast, fake_youtube, make_user, post_prediction, png_bytes, rows, signup  # noqa: F401
 from test_api_function import _real_inference, bearer
 from test_backup_restore import in_container, seed_every_table
-
-ETL_DIR = BACKEND_DIR.parent / "youtube-etl-pipeline" / "youtube_extractor"
-
 
 # ---------------------------------------------------------------------------
 # A Postgres server the tests are allowed to break
@@ -231,7 +226,7 @@ def test_f02_committed_data_survives_a_crash(flaky_db):
         seed_every_table(cur)
     conn.commit()
     with conn.cursor() as cur:
-        before = h.snapshot_rows(cur, ["users", "predictions", "notifications", "videos", "view_timeseries"])
+        before = h.snapshot_rows(cur, ["users", "predictions", "notifications", "channel_history_videos"])
     conn.close()
 
     pg.kill()
@@ -239,7 +234,7 @@ def test_f02_committed_data_survives_a_crash(flaky_db):
 
     after = pg.connect(flaky_db.name)
     with after.cursor() as cur:
-        assert h.snapshot_rows(cur, ["users", "predictions", "notifications", "videos", "view_timeseries"]) == before
+        assert h.snapshot_rows(cur, ["users", "predictions", "notifications", "channel_history_videos"]) == before
     after.close()
 
 
@@ -462,255 +457,6 @@ def test_f17_pool_recovers_after_overload_with_timeouts_and_errors(api):
 
 
 # ---------------------------------------------------------------------------
-# F-06 / F-07 / F-08  ETL Job 2 under failure
-# ---------------------------------------------------------------------------
-
-@pytest.fixture(scope="module")
-def job2():
-    pytest.importorskip("googleapiclient")
-    sys.path.insert(0, str(ETL_DIR))
-    try:
-        spec = importlib.util.spec_from_file_location("job2_failover", ETL_DIR / "job2_timeseries_collector.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    except ImportError as exc:
-        pytest.skip(f"ETL job dependencies unavailable: {exc}")
-    finally:
-        sys.path.remove(str(ETL_DIR))
-    return module
-
-
-def seed_due_videos(conn, count, prefix="vid", age_hours=0.5):
-    published = h.NOW.replace(year=2026)  # fixed past date; age is computed from published_at below
-    with conn.cursor() as cur:
-        h.channel(cur, "UC001")
-        for i in range(count):
-            cur.execute(
-                "INSERT INTO videos (video_id, channel_id, published_at, next_poll_at) "
-                "VALUES (%s, 'UC001', NOW() - %s * INTERVAL '1 hour', NOW() - INTERVAL '1 minute')",
-                (f"{prefix}{i:03d}", age_hours),
-            )
-    conn.commit()
-    return [f"{prefix}{i:03d}" for i in range(count)]
-
-
-def metrics_for(job2, conn, ids):
-    with conn.cursor() as cur:
-        cur.execute("SELECT video_id, published_at FROM videos WHERE video_id = ANY(%s)", (ids,))
-        published = dict(cur.fetchall())
-    scraped = "2026-09-20T10:00:00+00:00"
-    return [
-        {"video_id": v, "published_at": published[v], "scraped_at": scraped,
-         "view_count": 100, "like_count": 5, "comment_count": 1}
-        for v in ids
-    ]
-
-
-def test_f06_a_job_killed_before_its_commit_leaves_no_partial_write_and_the_next_run_repeats_it(job2, conn, db_dsn, monkeypatch):
-    ids = seed_due_videos(conn, 5)
-    dsn = db_dsn(conn)
-    metrics = metrics_for(job2, conn, ids)
-
-    victim = psycopg2.connect(dsn)  # the job's own connection
-    real = job2.execute_batch
-    calls = []
-
-    def die_on_second_batch(cur, *args, **kwargs):
-        calls.append(1)
-        if len(calls) == 2:  # timeseries rows are written; the video-poll update is not
-            raise KeyboardInterrupt("runner cancelled")
-        return real(cur, *args, **kwargs)
-
-    monkeypatch.setattr(job2, "execute_batch", die_on_second_batch)
-    with pytest.raises(KeyboardInterrupt):
-        job2.apply_decay_and_update(victim, list(metrics))
-    victim.close()  # process gone: the server rolls the open transaction back
-    monkeypatch.setattr(job2, "execute_batch", real)
-
-    check = psycopg2.connect(dsn)
-    with check.cursor() as cur:
-        assert h.count(cur, "view_timeseries") == 0
-    assert len(job2.query_due_videos(check)) == 5  # every video is still queued
-    check.close()
-
-    retry = psycopg2.connect(dsn)  # the next scheduled run
-    assert job2.apply_decay_and_update(retry, list(metrics)) == 5
-    retry.close()
-    with psycopg2.connect(dsn) as final, final.cursor() as cur:
-        cur.execute("SELECT video_id, COUNT(*) FROM view_timeseries GROUP BY 1")
-        assert dict(cur.fetchall()) == {v: 1 for v in ids}  # exactly once each
-        cur.execute("SELECT COUNT(*) FROM videos WHERE next_poll_at > NOW()")
-        assert cur.fetchone() == (5,)
-
-
-def test_f06_a_flagged_deletion_is_kept_when_the_later_write_fails(job2, conn, db_dsn, monkeypatch):
-    ids = seed_due_videos(conn, 4)
-    dsn = db_dsn(conn)
-    job_conn = psycopg2.connect(dsn)
-    job2.mark_deleted_or_private(job_conn, {ids[0]})  # committed on its own
-    monkeypatch.setattr(job2, "execute_batch", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("network drop")))
-    with pytest.raises(RuntimeError):
-        job2.apply_decay_and_update(job_conn, metrics_for(job2, conn, ids[1:]))
-    job_conn.close()
-    with psycopg2.connect(dsn) as check, check.cursor() as cur:
-        cur.execute("SELECT video_id, status FROM videos ORDER BY 1")
-        assert cur.fetchall() == [(ids[0], "deleted")] + [(v, "active") for v in ids[1:]]
-        assert h.count(cur, "view_timeseries") == 0
-
-
-def test_f07_overlapping_runs_and_ingestion_do_not_deadlock_or_lose_rows(job2, conn, db_dsn):
-    ids = seed_due_videos(conn, 40)
-    dsn = db_dsn(conn)
-    base = metrics_for(job2, conn, ids)
-    rounds = 8
-    barrier = threading.Barrier(3)
-
-    def job2_run(index):
-        connection = psycopg2.connect(dsn)
-        try:
-            barrier.wait(timeout=30)
-            for _ in range(rounds):
-                data = list(base) if index == 0 else list(reversed(base))  # opposite input orders
-                job2.apply_decay_and_update(connection, data)
-        finally:
-            connection.close()
-
-    def ingestion(_):  # stands in for Job 1: updates the same video rows, in primary-key order
-        connection = psycopg2.connect(dsn)
-        try:
-            barrier.wait(timeout=30)
-            for n in range(rounds):
-                with connection.cursor() as cur:
-                    for video_id in ids:
-                        cur.execute("UPDATE videos SET title = %s WHERE video_id = %s", (f"t{n}", video_id))
-                connection.commit()
-        finally:
-            connection.close()
-
-    _, errors_ = run_threads(lambda i: ingestion(i) if i == 2 else job2_run(i), 3)
-    assert errors_ == []  # no deadlock detected, no failed batch
-    with psycopg2.connect(dsn) as check, check.cursor() as cur:
-        assert h.count(cur, "view_timeseries") == 2 * rounds * len(ids)
-
-
-class FakeKeyPool:
-    """Stands in for APIKeyPool: replays a script of API outcomes, one per batch request."""
-
-    def __init__(self, script):
-        self.script, self.calls = list(script), 0
-
-    def execute_with_rotation(self, _builder):
-        self.calls += 1
-        outcome = self.script.pop(0)
-        if isinstance(outcome, BaseException):
-            raise outcome
-        return outcome
-
-
-def api_items(ids, drop=()):
-    return {"items": [{"id": v, "statistics": {"viewCount": "10", "likeCount": "1", "commentCount": "0"}}
-                      for v in ids if v not in drop]}
-
-
-def http_error(status, reason="backendError"):
-    from googleapiclient.errors import HttpError
-
-    body = json.dumps({"error": {"code": status, "message": f"YouTube API error: {reason}",
-                                 "errors": [{"message": reason, "domain": "youtube.quota", "reason": reason}]}}).encode()
-    return HttpError(httplib2.Response({"status": status}), body)
-
-
-def due(ids):
-    return [{"video_id": v, "published_at": "2026-09-20T09:00:00+00:00"} for v in ids]
-
-
-def test_f08_quota_exhaustion_is_not_mistaken_for_deleted_videos(job2):
-    ids = [f"v{i:03d}" for i in range(60)]  # two batches of 50 and 10
-    metrics, missing = job2.fetch_youtube_stats(due(ids), FakeKeyPool([job2.AllKeysExhaustedError("done")]))
-    assert metrics == [] and missing == set()
-
-    pool = FakeKeyPool([api_items(ids[:50], drop={"v003", "v007"}), job2.AllKeysExhaustedError("done")])
-    metrics, missing = job2.fetch_youtube_stats(due(ids), pool)
-    assert missing == {"v003", "v007"}  # only what the API really omitted; batch 2 was never answered
-    assert len(metrics) == 48
-
-
-def test_f08_an_api_outage_on_one_batch_neither_loses_nor_deletes_its_videos(job2):
-    ids = [f"v{i:03d}" for i in range(60)]
-    pool = FakeKeyPool([http_error(500), api_items(ids[50:])])
-    metrics, missing = job2.fetch_youtube_stats(due(ids), pool)
-    assert missing == set()  # the 50 unanswered videos stay active and due
-    assert {m["video_id"] for m in metrics} == set(ids[50:])
-
-
-def test_f08_a_run_with_every_key_exhausted_changes_nothing_and_the_next_run_can_resume(job2, conn, db_dsn, monkeypatch):
-    ids = seed_due_videos(conn, 6)
-    monkeypatch.setenv("SUPABASE_DB_URL", db_dsn(conn))
-    monkeypatch.setattr(job2.APIKeyPool, "from_env", classmethod(lambda cls: FakeKeyPool([job2.AllKeysExhaustedError("x")])))
-    job2.main()  # exits cleanly instead of raising
-
-    conn.rollback()
-    with conn.cursor() as cur:
-        assert h.count(cur, "view_timeseries") == 0
-        cur.execute("SELECT DISTINCT status FROM videos")
-        assert cur.fetchall() == [("active",)]
-    conn.rollback()
-
-    monkeypatch.setattr(job2.APIKeyPool, "from_env", classmethod(lambda cls: FakeKeyPool([api_items(ids)])))
-    job2.main()  # quota is back: the same videos are simply polled
-    conn.rollback()
-    with conn.cursor() as cur:
-        assert h.count(cur, "view_timeseries") == 6
-
-
-class ScriptedService:
-    """A fake YouTube service: each key either has quota or raises the given error."""
-
-    def __init__(self, key, behaviour):
-        self.key, self.behaviour = key, behaviour
-
-    def videos(self):
-        return self
-
-    def list(self, **_):
-        return self
-
-    def execute(self):
-        outcome = self.behaviour[self.key]
-        if isinstance(outcome, BaseException):
-            raise outcome
-        return outcome
-
-
-def scripted_pool(job2, keys, behaviour):
-    pool = job2.APIKeyPool(keys)
-    pool._build_service = lambda key: ScriptedService(key, behaviour)
-    return pool
-
-
-def test_f08_key_pool_rotates_on_quota_and_stops_when_all_keys_are_used_up(job2):
-    pool = scripted_pool(job2, ["key-one-aaaa", "key-two-bbbb"],
-                         {"key-one-aaaa": http_error(403, "quotaExceeded"), "key-two-bbbb": {"items": []}})
-    assert pool.execute_with_rotation(lambda svc: svc.videos().list()) == {"items": []}
-    assert pool.active_key == "key-two-bbbb" and pool.remaining_keys == 1
-
-    dead = scripted_pool(job2, ["key-one-aaaa", "key-two-bbbb"],
-                         {k: http_error(403, "quotaExceeded") for k in ("key-one-aaaa", "key-two-bbbb")})
-    with pytest.raises(job2.AllKeysExhaustedError):
-        dead.execute_with_rotation(lambda svc: svc.videos().list())
-
-
-def test_f08_a_non_quota_403_is_raised_not_treated_as_exhaustion(job2):
-    pool = scripted_pool(job2, ["key-one-aaaa", "key-two-bbbb"],
-                         {"key-one-aaaa": http_error(403, "forbidden"), "key-two-bbbb": {"items": []}})
-    from googleapiclient.errors import HttpError
-
-    with pytest.raises(HttpError):
-        pool.execute_with_rotation(lambda svc: svc.videos().list())
-    assert pool.remaining_keys == 2  # the key was not burned
-
-
-# ---------------------------------------------------------------------------
 # F-09  Model unavailable
 # ---------------------------------------------------------------------------
 
@@ -776,7 +522,7 @@ def test_f09_with_the_model_down_drafts_still_save_and_completed_runs_fail_clean
     assert [s for (s,) in rows(api, "SELECT status FROM predictions ORDER BY id")] == ["draft", "complete"]
 
 
-def test_f09_forecast_endpoint_reports_the_model_error_and_data_endpoints_keep_working(api):
+def test_f09_forecast_endpoint_reports_the_model_error_and_health_keeps_working(api):
     import main
     from fastapi.testclient import TestClient
 
@@ -788,7 +534,6 @@ def test_f09_forecast_endpoint_reports_the_model_error_and_data_endpoints_keep_w
     assert client.get("/forecast/health").json()["ready"] is False
     assert client.post("/forecast", json={"title": "t"}).status_code == 503
     assert client.get("/health").json() == {"status": "ok", "db": "connected"}
-    assert client.get("/channels").status_code == 200
 
 
 # ---------------------------------------------------------------------------
@@ -947,19 +692,6 @@ def test_f14_one_users_corrupt_row_does_not_affect_other_users(api):
     assert post_prediction(api, good_headers).status_code == 200
 
 
-def test_f14_an_orphaned_video_row_does_not_break_the_public_endpoints(api):
-    import main
-    from fastapi.testclient import TestClient
-
-    plant(api, "INSERT INTO videos (video_id, channel_id, published_at) VALUES ('orphan', 'UCmissing', NOW())")
-    plant(api, "INSERT INTO view_timeseries (video_id, scraped_at, view_count, like_count, comment_count) "
-               "VALUES ('orphan', NOW(), 1, 0, 0)")
-    client = TestClient(main.app, raise_server_exceptions=False)
-    assert client.get("/channels").status_code == 200
-    assert client.get("/channels/UCmissing/videos").status_code == 200
-    assert client.get("/videos/orphan/timeseries").status_code == 200
-
-
 # ---------------------------------------------------------------------------
 # F-15  Total loss, then restore from backup
 # ---------------------------------------------------------------------------
@@ -975,8 +707,8 @@ def test_f15_after_losing_every_row_a_restored_backup_lets_the_same_users_back_i
     dump = f"/tmp/{uuid.uuid4().hex}.dump"
     in_container("pg_dump", "-U", "postgres", "-Fc", "-f", dump, source)
 
-    api.cur.execute("TRUNCATE users, channel_stats, videos, view_timeseries, video_features, predictions, "
-                    "notifications, channel_stats_archive, videos_archive, view_timeseries_archive CASCADE")
+    api.cur.execute("TRUNCATE users, predictions, notifications, channel_history_cache, channel_history_videos, "
+                    "admins, admin_audit_log CASCADE")
     api.conn.commit()
     lost = api.client.post("/auth/login", data={"username": "ann@example.com", "password": PASSWORD})
     assert lost.status_code == 401  # the loss is real

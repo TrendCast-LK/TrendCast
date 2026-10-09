@@ -5,9 +5,7 @@ The classes below are a serving copy of the ones in
 ensemble_artifacts/export_histattn_v2.py, the script that trained and saved
 histattn_v2.pt. load_state_dict(strict=True) checks every key and shape against
 the saved file, so any drift from the training architecture fails at startup
-instead of producing quiet nonsense. MODEL_INTEGRATION_V2.md section 3 describes
-a different layout (a LayerNorm+GELU tabular tower, no post-projection
-LayerNorm, separate text/image arguments) that does not load this state_dict.
+instead of producing quiet nonsense.
 
 The feature helpers reproduce that script's build_hist() one value at a time:
 the joint L2 normalisation of [text_512, image_512], the history-feature scaling

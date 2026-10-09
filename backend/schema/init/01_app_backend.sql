@@ -1,9 +1,8 @@
 -- =============================================================================
--- App Backend Migration
--- File: backend/schema/init/03_app_backend.sql
--- Purpose: Adds the tables backing the FastAPI backend's user-facing app
---          (accounts, saved predictions, notifications) on top of the
---          ETL-owned channel/video/timeseries tables from 01_schema.sql.
+-- App tables
+-- File: backend/schema/init/01_app_backend.sql
+-- Purpose: The tables backing the FastAPI backend's user-facing app
+--          (accounts, saved predictions, notifications).
 -- =============================================================================
 
 -- =============================================================================
@@ -12,8 +11,7 @@
 -- the YouTube Data API for the channel URL given at signup (title,
 -- description, thumbnail_url, banner_url, country, published_at,
 -- subscriber_count, view_count, video_count, subscriber_hidden, channel_id,
--- fetched_at) - kept separate from the ETL's channel_stats table since it's a
--- per-user profile snapshot, not a tracked forecasting-dataset channel.
+-- fetched_at).
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS users (
     id                      BIGSERIAL       PRIMARY KEY,
