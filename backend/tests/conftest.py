@@ -31,7 +31,6 @@ SCHEMA_DIR = BACKEND_DIR / "schema"
 
 # Applied in order, exactly as they would be on a fresh database.
 INIT_SCRIPTS = sorted((SCHEMA_DIR / "init").glob("0*.sql"))
-MIGRATION_002 = SCHEMA_DIR / "migrations" / "002_add_video_metadata.sql"
 MIGRATION_003 = SCHEMA_DIR / "migrations" / "003_notifications_type_check.sql"
 MIGRATION_004 = SCHEMA_DIR / "migrations" / "004_enable_row_level_security.sql"
 MIGRATION_005 = SCHEMA_DIR / "migrations" / "005_channel_history_cache.sql"
@@ -111,7 +110,7 @@ def _admin(pg_server):
 
 @pytest.fixture(scope="session")
 def template_db(pg_server):
-    """Database with 01..04 applied once; per-test databases are copies of it."""
+    """Database with the init scripts applied once; per-test databases are copies of it."""
     admin = _admin(pg_server)
     with admin.cursor() as cur:
         cur.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(TEMPLATE_DB)))

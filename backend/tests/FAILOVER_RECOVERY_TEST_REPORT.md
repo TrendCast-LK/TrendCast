@@ -1,5 +1,12 @@
 ### 3.1.7 Failover and Recovery Testing
 
+> **Note:** this report records the test run on 20 September 2026. At that time the
+> database also held the YouTube data-collection pipeline's tables (`channel_stats`,
+> `videos`, `view_timeseries`, `video_features`, the archive tables and the
+> `channel_stats_enriched` view) and their endpoints. The pipeline has since been
+> retired, and those tables, endpoints and their tests were removed
+> (migration `007_drop_pipeline_tables.sql`).
+
 > **Note (2026-10-07):** the ETL pipeline was removed from the repo, and with it the F-06, F-07 and F-08 tests. The ETL rows below record the run they came from.
 
 Failover and recovery testing ensures that TrendCast can fail over and recover from a variety of hardware, software and network malfunctions without undue loss of data or data integrity.

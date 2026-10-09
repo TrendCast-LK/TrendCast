@@ -226,7 +226,7 @@ def test_f02_committed_data_survives_a_crash(flaky_db):
         seed_every_table(cur)
     conn.commit()
     with conn.cursor() as cur:
-        before = h.snapshot_rows(cur, ["users", "predictions", "notifications", "videos", "view_timeseries"])
+        before = h.snapshot_rows(cur, ["users", "predictions", "notifications", "channel_history_videos"])
     conn.close()
 
     pg.kill()
@@ -234,7 +234,7 @@ def test_f02_committed_data_survives_a_crash(flaky_db):
 
     after = pg.connect(flaky_db.name)
     with after.cursor() as cur:
-        assert h.snapshot_rows(cur, ["users", "predictions", "notifications", "videos", "view_timeseries"]) == before
+        assert h.snapshot_rows(cur, ["users", "predictions", "notifications", "channel_history_videos"]) == before
     after.close()
 
 
@@ -522,7 +522,7 @@ def test_f09_with_the_model_down_drafts_still_save_and_completed_runs_fail_clean
     assert [s for (s,) in rows(api, "SELECT status FROM predictions ORDER BY id")] == ["draft", "complete"]
 
 
-def test_f09_forecast_endpoint_reports_the_model_error_and_data_endpoints_keep_working(api):
+def test_f09_forecast_endpoint_reports_the_model_error_and_health_keeps_working(api):
     import main
     from fastapi.testclient import TestClient
 
@@ -534,7 +534,6 @@ def test_f09_forecast_endpoint_reports_the_model_error_and_data_endpoints_keep_w
     assert client.get("/forecast/health").json()["ready"] is False
     assert client.post("/forecast", json={"title": "t"}).status_code == 503
     assert client.get("/health").json() == {"status": "ok", "db": "connected"}
-    assert client.get("/channels").status_code == 200
 
 
 # ---------------------------------------------------------------------------
@@ -693,19 +692,6 @@ def test_f14_one_users_corrupt_row_does_not_affect_other_users(api):
     assert post_prediction(api, good_headers).status_code == 200
 
 
-def test_f14_an_orphaned_video_row_does_not_break_the_public_endpoints(api):
-    import main
-    from fastapi.testclient import TestClient
-
-    plant(api, "INSERT INTO videos (video_id, channel_id, published_at) VALUES ('orphan', 'UCmissing', NOW())")
-    plant(api, "INSERT INTO view_timeseries (video_id, scraped_at, view_count, like_count, comment_count) "
-               "VALUES ('orphan', NOW(), 1, 0, 0)")
-    client = TestClient(main.app, raise_server_exceptions=False)
-    assert client.get("/channels").status_code == 200
-    assert client.get("/channels/UCmissing/videos").status_code == 200
-    assert client.get("/videos/orphan/timeseries").status_code == 200
-
-
 # ---------------------------------------------------------------------------
 # F-15  Total loss, then restore from backup
 # ---------------------------------------------------------------------------
@@ -721,8 +707,8 @@ def test_f15_after_losing_every_row_a_restored_backup_lets_the_same_users_back_i
     dump = f"/tmp/{uuid.uuid4().hex}.dump"
     in_container("pg_dump", "-U", "postgres", "-Fc", "-f", dump, source)
 
-    api.cur.execute("TRUNCATE users, channel_stats, videos, view_timeseries, video_features, predictions, "
-                    "notifications, channel_stats_archive, videos_archive, view_timeseries_archive CASCADE")
+    api.cur.execute("TRUNCATE users, predictions, notifications, channel_history_cache, channel_history_videos, "
+                    "admins, admin_audit_log CASCADE")
     api.conn.commit()
     lost = api.client.post("/auth/login", data={"username": "ann@example.com", "password": PASSWORD})
     assert lost.status_code == 401  # the loss is real

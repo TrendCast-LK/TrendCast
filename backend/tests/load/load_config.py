@@ -23,14 +23,9 @@ JWT_SECRET = os.environ.get("LOAD_JWT_SECRET", "load-test-secret")
 # Every row the kit creates carries one of these markers, so cleanup can never touch other data.
 SEED_EMAIL_PATTERN = r"loadtest\_%@example.com"
 SIGNUP_EMAIL_PATTERN = r"loadsignup\_%@example.com"
-SEED_CHANNEL_PATTERN = "UCLOAD%"
 PASSWORD = "LoadTest#2026"
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
-
-
-def channel_id(n: int) -> str:
-    return f"UCLOAD{n:018d}"
 
 
 def user_email(n: int) -> str:

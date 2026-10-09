@@ -49,11 +49,8 @@ def test_unexpected_column_is_reported(expected, damaged):
 
 
 def test_missing_column_is_reported(expected, damaged):
-    damaged[1].execute("DROP VIEW channel_stats_enriched")
-    damaged[1].execute("ALTER TABLE videos DROP COLUMN duration")
-    problems = diff_against(expected, damaged)
-    assert "missing column: videos.duration" in problems
-    assert "missing view: channel_stats_enriched" in problems
+    damaged[1].execute("ALTER TABLE predictions DROP COLUMN dataset_path")
+    assert diff_against(expected, damaged) == ["missing column: predictions.dataset_path"]
 
 
 def test_changed_column_type_is_reported(expected, damaged):
@@ -68,17 +65,15 @@ def test_missing_index_is_reported(expected, damaged):
     assert diff_against(expected, damaged) == ["missing index: users.idx_users_email"]
 
 
-def test_changed_view_definition_is_reported(expected, damaged):
-    damaged[1].execute("DROP VIEW channel_stats_enriched")
-    damaged[1].execute("CREATE VIEW channel_stats_enriched AS SELECT channel_id FROM channel_stats")
-    problems = diff_against(expected, damaged)
-    assert problems and problems[0].startswith("changed view: channel_stats_enriched")
+def test_unexpected_view_is_reported(expected, damaged):
+    damaged[1].execute("CREATE VIEW user_emails AS SELECT email FROM users")
+    assert diff_against(expected, damaged) == ["unexpected view: user_emails"]
 
 
 def test_changed_default_is_reported(expected, damaged):
-    damaged[1].execute("ALTER TABLE videos ALTER COLUMN current_interval_hours SET DEFAULT 12")
+    damaged[1].execute("ALTER TABLE predictions ALTER COLUMN status SET DEFAULT 'complete'")
     (problem,) = diff_against(expected, damaged)
-    assert problem.startswith("changed column: videos.current_interval_hours")
+    assert problem.startswith("changed column: predictions.status")
 
 
 def test_disabled_row_level_security_is_reported(expected, damaged):
@@ -123,7 +118,7 @@ def test_several_problems_are_all_listed(expected, damaged):
 
 @pytest.mark.skipif(not os.environ.get("LIVE_DB_CHECK_URL"), reason="set LIVE_DB_CHECK_URL to check a real database")
 def test_live_database_matches_the_schema_scripts(expected):
-    """Read-only comparison of a real database against a fresh build of 01..04."""
+    """Read-only comparison of a real database against a fresh build of the init scripts."""
     live = psycopg2.connect(os.environ["LIVE_DB_CHECK_URL"], options="-c default_transaction_read_only=on")
     live.set_session(readonly=True, autocommit=True)
     try:

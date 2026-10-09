@@ -1,5 +1,12 @@
 # TrendCast – Data and Database Integrity Test Report
 
+> **Note:** this report records the test run on 20 September 2026. At that time the
+> database also held the YouTube data-collection pipeline's tables (`channel_stats`,
+> `videos`, `view_timeseries`, `video_features`, the archive tables and the
+> `channel_stats_enriched` view) and their endpoints. The pipeline has since been
+> retired, and those tables, endpoints and their tests were removed
+> (migration `007_drop_pipeline_tables.sql`).
+
 | | |
 |---|---|
 | **System** | TrendCast – YouTube view forecasting web application (FastAPI backend, PostgreSQL on Supabase) |

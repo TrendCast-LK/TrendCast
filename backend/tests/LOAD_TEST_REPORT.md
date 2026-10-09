@@ -1,5 +1,12 @@
 ### 3.1.5 Load Testing
 
+> **Note:** this report records the test run on 20 September 2026. At that time the
+> database also held the YouTube data-collection pipeline's tables (`channel_stats`,
+> `videos`, `view_timeseries`, `video_features`, the archive tables and the
+> `channel_stats_enriched` view) and their endpoints. The pipeline has since been
+> retired, and those tables, endpoints and their tests were removed
+> (migration `007_drop_pipeline_tables.sql`).
+
 **Technique Objective:**
 The objective of load testing is to subject TrendCast to varying workloads and to observe how it behaves: under a normal workload, under a worst-case workload, and with a considerable number of concurrent users. The test measures response times, transaction rates and error rates, and finds the point at which the system stops coping. The goal, as in the test plan, is to determine whether the system keeps functioning properly beyond its expected workload, and to learn its performance boundaries.
 

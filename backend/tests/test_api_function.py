@@ -400,7 +400,7 @@ def test_prediction_id_that_is_not_a_number_is_422(api):
 
 
 # ---------------------------------------------------------------------------
-# F15-F18 main.py: public data, forecast, uploads, CORS
+# F15-F18 main.py: health, forecast, uploads, CORS
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
@@ -413,50 +413,8 @@ def main_client(api):
     return TestClient(main.app, raise_server_exceptions=False)
 
 
-def seed_channel_and_video(api):
-    api.cur.execute(
-        "INSERT INTO channel_stats (channel_id, channel_title, total_views, subscriber_count, video_count, published_at) "
-        "VALUES ('UCzero', 'Zero', 0, 0, 0, NOW()), ('UCbig', 'Big', 1000, 100, 10, NOW())"
-    )
-    api.cur.execute("INSERT INTO videos (video_id, channel_id, published_at) VALUES ('vid1', 'UCbig', NOW())")
-    api.cur.execute(
-        "INSERT INTO view_timeseries (video_id, scraped_at, view_count, like_count, comment_count) VALUES "
-        "('vid1', NOW(), 200, 2, 1), ('vid1', NOW() - INTERVAL '1 hour', 100, 1, 0)"
-    )
-    api.conn.commit()
-
-
 def test_health_reports_a_connected_database(api, main_client):
     assert main_client.get("/health").json() == {"status": "ok", "db": "connected"}
-
-
-def test_channels_endpoint_returns_enriched_kpis_and_survives_zero_denominators(api, main_client):
-    seed_channel_and_video(api)
-    response = main_client.get("/channels")
-    assert response.status_code == 200
-    by_id = {c["channel_id"]: c for c in response.json()}
-    assert by_id["UCbig"]["avg_views_per_video"] == 100 and by_id["UCbig"]["views_per_subscriber"] == 10
-    assert by_id["UCbig"]["size_tier"].startswith("Micro")
-    zero = by_id["UCzero"]
-    assert zero["avg_views_per_video"] == 0 and zero["views_per_subscriber"] == 0 and zero["engagement_ratio"] == 0
-
-
-def test_channel_videos_lists_only_that_channels_videos(api, main_client):
-    seed_channel_and_video(api)
-    body = main_client.get("/channels/UCbig/videos").json()
-    assert [v["video_id"] for v in body] == ["vid1"] and body[0]["status"] == "active"
-
-
-@pytest.mark.parametrize("path", ["/channels/UCnobody/videos", "/videos/nope/timeseries"])
-def test_unknown_ids_give_an_empty_list_not_an_error(api, main_client, path):
-    response = main_client.get(path)
-    assert response.status_code == 200 and response.json() == []
-
-
-def test_video_timeseries_is_oldest_first(api, main_client):
-    seed_channel_and_video(api)
-    body = main_client.get("/videos/vid1/timeseries").json()
-    assert [p["view_count"] for p in body] == [100, 200]
 
 
 class ReadyState:

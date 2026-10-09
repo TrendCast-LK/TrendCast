@@ -2,8 +2,8 @@
 -- Migration: Admin dashboard
 -- File: backend/schema/migrations/006_admin_dashboard.sql
 -- Run manually against the live Supabase database (idempotent — safe to
--- re-run). Mirrors users.is_active in backend/schema/init/03_app_backend.sql
--- and backend/schema/init/06_admin.sql, which remain the source of truth for
+-- re-run). Mirrors users.is_active in backend/schema/init/01_app_backend.sql
+-- and backend/schema/init/03_admin.sql, which remain the source of truth for
 -- a fresh DB init.
 --
 -- After applying, create the first admin from backend/:

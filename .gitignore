@@ -16,16 +16,8 @@ venv/
 env/
 ENV/
 
-# ML data extracts
-ml/data/
-# Large training data / scratch in artifacts/ (serving files -- *.cbm, *.pkl,
-# config/feature/maturation json -- stay tracked so the backend runs after a clone)
-artifacts/*.csv
-artifacts/*.npy
-artifacts/catboost_info/
-artifacts/.ipynb_checkpoints/
-artifacts/*.ipynb
-artifacts/.claude/
+# Training corpus (optional; only the heavy artifact tests read it)
+artifacts/
 # CatBoost training logs written next to the ensemble export
 ensemble_artifacts/catboost_info/
 

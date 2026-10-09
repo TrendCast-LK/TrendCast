@@ -2,7 +2,7 @@
 -- Migration: Channel history cache for the HistAttnV2 forecast ensemble
 -- File: backend/schema/migrations/005_channel_history_cache.sql
 -- Run manually against the live Supabase database (idempotent — safe to
--- re-run). Mirrors backend/schema/init/05_channel_history_cache.sql, which
+-- re-run). Mirrors backend/schema/init/02_channel_history_cache.sql, which
 -- remains the source of truth for a fresh DB init.
 --
 -- Until this is applied the backend still serves forecasts: reading the

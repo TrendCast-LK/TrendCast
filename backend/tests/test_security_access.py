@@ -44,7 +44,6 @@ from test_api_function import (  # noqa: F401  (main_client is a fixture)
     bearer,
     insert_prediction,
     main_client,
-    seed_channel_and_video,
     token_for,
 )
 
@@ -74,9 +73,6 @@ PUBLIC_BY_DESIGN = {
 # Open today, with no login and no owner. Listed so a NEW open route cannot appear
 # unnoticed; whether these should stay open is the A7 decision in the test plan.
 PUBLIC_UNDECIDED = {
-    ("GET", "/channels"),
-    ("GET", "/videos/{video_id}/timeseries"),
-    ("GET", "/channels/{channel_id}/videos"),
     ("GET", "/forecast/health"),
     ("POST", "/forecast"),
 }
@@ -119,12 +115,10 @@ def test_malformed_authorization_headers_are_rejected(api, header):
     assert api.client.get("/auth/me", headers={"Authorization": header}).status_code == 401
 
 
-def test_public_data_routes_are_readable_without_a_login_today(api, main_client):
-    """S-A7: documents current behaviour (public read-only pipeline data). Revisit if it should be private."""
-    seed_channel_and_video(api)
+def test_public_model_status_route_is_readable_without_a_login_today(api, main_client):
+    """S-A7: documents current behaviour (the model status is public). Revisit if it should be private."""
     api.monkeypatch.setattr(api.main, "get_state", lambda: ReadyState())
-    for path in ("/channels", "/channels/UCbig/videos", "/videos/vid1/timeseries", "/forecast/health"):
-        assert main_client.get(path).status_code == 200, path
+    assert main_client.get("/forecast/health").status_code == 200
 
 
 def test_another_user_cannot_read_a_prediction(api):
@@ -401,8 +395,7 @@ def test_a_non_owner_role_sees_no_rows_in_any_table(conn, low_privilege_role):
             "INSERT INTO users (full_name, email, password_hash, channel_url) "
             "VALUES ('a', 'a@x.com', '$2b$12$hash', 'u')"
         )
-        cur.execute("INSERT INTO channel_stats (channel_id, channel_title, total_views, subscriber_count, video_count) "
-                    "VALUES ('UC1', 't', 1, 1, 1)")
+        cur.execute("INSERT INTO channel_history_cache (channel_id) VALUES ('UC1')")
         cur.execute("SELECT relname FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' ORDER BY 1")
         tables = [r[0] for r in cur.fetchall()]
         conn.commit()
@@ -503,16 +496,6 @@ def test_sql_injection_in_signup_email_is_rejected_by_validation(api, payload):
         "/auth/signup", json={"full_name": "x", "email": payload, "password": PASSWORD, "channel_url": "u"}
     )
     assert response.status_code == 422
-
-
-@pytest.mark.parametrize("payload", SQLI_PAYLOADS)
-def test_sql_injection_in_public_path_parameters_is_harmless(api, main_client, payload):
-    """S-C1"""
-    make_user(api)
-    for path in (f"/channels/{payload}/videos", f"/videos/{payload}/timeseries"):
-        response = main_client.get(path)
-        assert response.status_code in (200, 404) and (response.json() == [] or response.status_code == 404)
-    assert rows(api, "SELECT COUNT(*) FROM users") == [(1,)]
 
 
 def test_non_numeric_ids_in_paths_are_422_not_500(api):
